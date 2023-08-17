@@ -5,7 +5,7 @@ const cors = require('cors');
 const { Pool } = require('pg');
 
 const app = express();
-const port = 3000;
+const port = 5000;
 
 // Database configuration
 const pool = new Pool({
@@ -31,7 +31,7 @@ app.post('/login', async (req, res) => {
 
   try {
     const result = await pool.query(
-      'SELECT * FROM "User" WHERE email = $1',
+      'SELECT * FROM "learner_details" WHERE email = $1',
       [email]
     );
 
@@ -64,7 +64,7 @@ app.post('/signup', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     await pool.query(
-      'INSERT INTO "User" (name, email, password) VALUES ($1, $2, $3)',
+      'INSERT INTO "learner_details" (name, email, password) VALUES ($1, $2, $3)',
       [name, email, hashedPassword]
     );
 
@@ -104,6 +104,19 @@ app.get('/courses', async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
+
+// Get all learners
+app.get('/learners', async (req, res) => {
+    try {
+      const result = await pool.query('SELECT * FROM learner_details');
+      const learners = result.rows;
+  
+      res.json(learners);
+    } catch (error) {
+      console.error('Error retrieving users:', error);
+      res.status(500).json({ message: 'Server error' });
+    }
+  });
 
 // Admin login
 app.post('/admin/login', async (req, res) => {
@@ -154,6 +167,10 @@ app.post('/admin/courses', async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
+
+app.get('/', async (req, res) => {
+    res.json({ message: `Server running successfully on port ${port}` });
+  });
 
 // Start the server
 app.listen(port, () => {
