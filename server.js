@@ -211,6 +211,43 @@ app.get('/courses/enrollments/:learner_id', async (req, res) => {
     }
     });
 
+// Get all courses 
+app.get('/enroll/courses/:learnerId', async (req, res) => {
+    const { learnerId } = req.params;
+  
+    try {
+      const queryResult = await pool.query(
+        'SELECT courses.id, courses.title, courses.description, courses.objectives, courses.level, courses.duration, courses.prerequisites, courses.certification, courses.language, courses.tag, courses.thumbnail_url FROM course_enrollment INNER JOIN courses ON course_enrollment.course_id = courses.id WHERE course_enrollment.learner_id = $1',
+        [learnerId]
+      );
+      const enrolledCourses = queryResult.rows;
+  
+      res.json(enrolledCourses);
+    } catch (error) {
+      console.error('Error fetching enrolled courses:', error);
+      res.status(500).json({ message: 'Server error' });
+    }
+  });
+
+// check enrollment of a learner in a course
+app.get('/enroll/status', async (req, res) => {
+        const { learner_id, course_id } = req.query;
+      
+        try {
+          const queryResult = await pool.query(
+            'SELECT COUNT(*) AS count FROM course_enrollment WHERE learner_id = $1 AND course_id = $2',
+            [learner_id, course_id]
+          );
+          const enrollmentCount = queryResult.rows[0].count;
+          const isEnrolled = enrollmentCount > 0;
+      
+          res.json({ isEnrolled });
+        } catch (error) {
+          console.error('Error checking enrollment status:', error);
+          res.status(500).json({ message: 'Server error' });
+        }
+});
+
 // Get all learners (users)
 app.get('/learners', async (req, res) => {
     try {
@@ -285,11 +322,11 @@ app.post('/admin/login', async (req, res) => {
 
 // Admin adds a new course
 app.post('/admin/courses', async (req, res) => {
-  const { title, description, objectives, level, duration, instructor_id, prerequisites, certification, language, tag } = req.body;
+  const { title, description, objectives, level, duration, instructor_id, prerequisites, certification, language, tag, thumbnail_url } = req.body;
 
   try {
-    await pool.query('INSERT INTO courses (title, description, objectives, level, duration, instructor_id, prerequisites, certification, language, tag) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)', [
-      title, description, objectives, level, duration, instructor_id, prerequisites, certification, language, tag
+    await pool.query('INSERT INTO courses (title, description, objectives, level, duration, instructor_id, prerequisites, certification, language, tag, thumbnail_url) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)', [
+      title, description, objectives, level, duration, instructor_id, prerequisites, certification, language, tag, thumbnail_url
     ]);
 
     res.json({ message: 'Course added successfully' });
