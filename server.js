@@ -519,6 +519,10 @@ app.get('/', async (req, res) => {
     res.json({ message: `Server running successfully on port ${port}` });
   });
 
+app.get('/home', async (req, res) => {
+    res.json({ message: `Server running successfully on porter ${port}` });
+  });
+
 // Start the server
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
