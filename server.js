@@ -515,7 +515,7 @@ app.get('/video-progress/:learnerId/:courseId/:videoId', async (req, res) => {
     }
   });
 
-app.get('/home', async (req, res) => {
+app.get('/', async (req, res) => {
     res.json({ message: `Server running successfully on port ${port}` });
   });
 
