@@ -423,6 +423,26 @@ app.post('/admin/courses', async (req, res) => {
       res.status(500).json({ message: 'Server error' });
     }
   });
+
+  // Admin adds multiple courses at once to the database
+  app.post('/admin/mcourses', async (req, res) => {
+    const courses = req.body;
+  
+    try {
+      const { data, error } = await supabase
+        .from('courses')
+        .insert(courses);
+  
+      if (error) {
+        return res.status(500).json({ message: 'Server error' });
+      }
+  
+      res.json({ message: 'Courses added successfully' });
+    } catch (error) {
+      console.error('Error adding courses:', error);
+      res.status(500).json({ message: 'Server error' });
+    }
+  });
   
   // Admin adds a new course content
   app.post('/admin/courses/content', async (req, res) => {
