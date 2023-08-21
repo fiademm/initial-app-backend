@@ -2,40 +2,38 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
-const { Pool } = require('pg');
+const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
 const port = 5000;
 
-// Database configuration
-const pool = new Pool({
-  user: 'postgres',
-  host: 'localhost',
-  database: 'initial_app_database',
-  password: 'postgres',
-  port: 5432,
-});
+const supabaseUrl = 'https://kfpwuckkyjmvijyvrvcc.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtmcHd1Y2treWptdmlqeXZydmNjIiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTI1NzQwOTYsImV4cCI6MjAwODE1MDA5Nn0.Ub4Kv-i7YwhdZfcfbrP7lYy68EiIiKJ3hIrUp5rpRG0'; // Replace with your Supabase key
+const supabase = createClient(supabaseUrl, supabaseKey, {
+    persistSession: false, // Disable session persistence
+  });
+  
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// JWT secret key (change it to your own secret)
 const jwtSecret = 'C0BAF97A89FB5FB68AAAA57FAFEAA95FAF9E8A4F8135BC6F38BA46095FB203B1';
 
-// Routes
-
-// Learner login
+// learner login
 app.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const result = await pool.query(
-      'SELECT * FROM "learner_details" WHERE email = $1',
-      [email]
-    );
+    const { data, error } = await supabase
+      .from('learner_details')
+      .select('*')
+      .eq('email', email);
 
-    const user = result.rows[0];
+    if (error) {
+      return res.status(500).json({ message: 'Server error' });
+    }
+
+    const user = data[0];
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -56,17 +54,20 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// Learner registration
+// learner signup
 app.post('/signup', async (req, res) => {
   const { name, email, password } = req.body;
 
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    await pool.query(
-      'INSERT INTO "learner_details" (name, email, password) VALUES ($1, $2, $3)',
-      [name, email, hashedPassword]
-    );
+    const { error } = await supabase
+      .from('learner_details')
+      .insert([{ name, email, password: hashedPassword }]);
+
+    if (error) {
+      return res.status(500).json({ message: 'Server error' });
+    }
 
     res.json({ message: 'Registration successful' });
   } catch (error) {
@@ -80,12 +81,16 @@ app.post('/instructor/login', async (req, res) => {
     const { email, password } = req.body;
   
     try {
-      const result = await pool.query(
-        'SELECT * FROM "instructor_details" WHERE email = $1',
-        [email]
-      );
+      const { data, error } = await supabase
+        .from('instructor_details')
+        .select('*')
+        .eq('email', email);
   
-      const user = result.rows[0];
+      if (error) {
+        return res.status(500).json({ message: 'Server error' });
+      }
+  
+      const user = data[0];
   
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
@@ -104,7 +109,7 @@ app.post('/instructor/login', async (req, res) => {
       console.error('Error during login:', error);
       res.status(500).json({ message: 'Server error' });
     }
-  });
+});
 
 // Instructor registration
 app.post('/instructor/signup', async (req, res) => {
@@ -113,17 +118,20 @@ app.post('/instructor/signup', async (req, res) => {
     try {
       const hashedPassword = await bcrypt.hash(password, 10);
   
-      await pool.query(
-        'INSERT INTO "instructor_details" (name, email, password) VALUES ($1, $2, $3)',
-        [name, email, hashedPassword]
-      );
+      const { error } = await supabase
+        .from('instructor_details')
+        .insert([{ name, email, password: hashedPassword }]);
+  
+      if (error) {
+        return res.status(500).json({ message: 'Server error' });
+      }
   
       res.json({ message: 'Registration successful' });
     } catch (error) {
       console.error('Error during signup:', error);
       res.status(500).json({ message: 'Server error' });
     }
-  });
+});
 
 // Learner enrolls in a course
 app.post('/enroll', async (req, res) => {
@@ -132,9 +140,13 @@ app.post('/enroll', async (req, res) => {
   const enrollment_date = new Date();
 
   try {
-    await pool.query('INSERT INTO course_enrollment (learner_id, course_id, enrollment_date) VALUES ($1, $2, $3)', [
-        learner_id, course_id, enrollment_date
-    ]);
+    const { error } = await supabase
+      .from('course_enrollment')
+      .insert([{ learner_id, course_id, enrollment_date }]);
+
+    if (error) {
+      return res.status(500).json({ message: 'Server error' });
+    }
 
     res.json({ message: 'Enrollment successful' });
   } catch (error) {
@@ -146,10 +158,15 @@ app.post('/enroll', async (req, res) => {
 // Get all courses
 app.get('/courses', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM courses');
-    const courses = result.rows;
+    const { data, error } = await supabase
+      .from('courses')
+      .select('*');
 
-    res.json(courses);
+    if (error) {
+      return res.status(500).json({ message: 'Server error' });
+    }
+
+    res.json(data);
   } catch (error) {
     console.error('Error retrieving courses:', error);
     res.status(500).json({ message: 'Server error' });
@@ -159,224 +176,325 @@ app.get('/courses', async (req, res) => {
 // Get all course content for a particular course
 app.get('/courses/content/:course_id', async (req, res) => {
     try {
-    const course_id = req.params.course_id;
-    const result = await pool.query('SELECT * FROM course_content WHERE course_id = $1', [course_id]);
-    const course_content = result.rows;
-    
-      res.json(course_content);
-    } catch (error) {
-      console.error('Error retrieving course content:', error);
-      res.status(500).json({ message: 'Server error' });
-    }
-    });
-
-// Get all course videos for a particular course
-app.get('/courses/content/videos/:course_id', async (req, res) => {
-    try {
-    const course_id = req.params.course_id;
-    const result = await pool.query('SELECT * FROM course_content WHERE course_id = $1 AND content_type = Video', [course_id]);
-    const course_content = result.rows;
-    
-      res.json(course_content);
-    } catch (error) {
-      console.error('Error retrieving course content:', error);
-      res.status(500).json({ message: 'Server error' });
-    }
-    });
-
-// Get all course enrollments
-app.get('/courses/enrollments', async (req, res) => {
-    try {
-      const result = await pool.query('SELECT * FROM course_enrollment');
-      const courses = result.rows;
+      const course_id = req.params.course_id;
+      const { data, error } = await supabase
+        .from('course_content')
+        .select('*')
+        .eq('course_id', course_id);
   
-      res.json(courses);
+      if (error) {
+        return res.status(500).json({ message: 'Server error' });
+      }
+  
+      res.json(data);
     } catch (error) {
-      console.error('Error retrieving courses:', error);
+      console.error('Error retrieving course content:', error);
       res.status(500).json({ message: 'Server error' });
     }
   });
-
-// Get all enrolled courses for a particular user
-app.get('/courses/enrollments/:learner_id', async (req, res) => {
+  
+  // Get all course videos for a particular course
+  app.get('/courses/content/videos/:course_id', async (req, res) => {
     try {
-    const learner_id = req.params.learner_id;
-    const result = await pool.query('SELECT * FROM course_enrollment WHERE learner_id = $1', [learner_id]);
-    const courses = result.rows;
-    
-      res.json(courses);
+      const course_id = req.params.course_id;
+      const { data, error } = await supabase
+        .from('course_content')
+        .select('*')
+        .eq('course_id', course_id)
+        .eq('content_type', 'Video');
+  
+      if (error) {
+        return res.status(500).json({ message: 'Server error' });
+      }
+  
+      res.json(data);
     } catch (error) {
-      console.error('Error retrieving courses:', error);
+      console.error('Error retrieving course content:', error);
       res.status(500).json({ message: 'Server error' });
     }
-    });
-
-// Get all courses 
-app.get('/enroll/courses/:learnerId', async (req, res) => {
+  });
+  
+  // Get all course enrollments
+  app.get('/courses/enrollments', async (req, res) => {
+    try {
+      const { data, error } = await supabase
+        .from('course_enrollment')
+        .select('*');
+  
+      if (error) {
+        return res.status(500).json({ message: 'Server error' });
+      }
+  
+      res.json(data);
+    } catch (error) {
+      console.error('Error retrieving course enrollments:', error);
+      res.status(500).json({ message: 'Server error' });
+    }
+  });
+  
+  // Get all enrolled courses for a particular user
+  app.get('/courses/enrollments/:learner_id', async (req, res) => {
+    try {
+      const learner_id = req.params.learner_id;
+      const { data, error } = await supabase
+        .from('course_enrollment')
+        .select('*')
+        .eq('learner_id', learner_id);
+  
+      if (error) {
+        return res.status(500).json({ message: 'Server error' });
+      }
+  
+      res.json(data);
+    } catch (error) {
+      console.error('Error retrieving enrolled courses:', error);
+      res.status(500).json({ message: 'Server error' });
+    }
+  });
+  
+  // Get all courses for a particular learner
+  app.get('/enroll/courses/:learnerId', async (req, res) => {
     const { learnerId } = req.params;
   
     try {
-      const queryResult = await pool.query(
-        'SELECT courses.id, courses.title, courses.description, courses.objectives, courses.level, courses.duration, courses.prerequisites, courses.certification, courses.language, courses.tag, courses.thumbnail_url FROM course_enrollment INNER JOIN courses ON course_enrollment.course_id = courses.id WHERE course_enrollment.learner_id = $1',
-        [learnerId]
-      );
-      const enrolledCourses = queryResult.rows;
+      const { data, error } = await supabase
+        .from('course_enrollment')
+        .select('courses(id, title, description, objectives, level, duration, prerequisites, certification, language, tag, thumbnail_url)')
+        .eq('learner_id', learnerId)
+        .order('enrollment_date', { ascending: false })
+        .innerJoin('courses', 'course_id', 'courses.id');
   
-      res.json(enrolledCourses);
+      if (error) {
+        return res.status(500).json({ message: 'Server error' });
+      }
+  
+      res.json(data);
     } catch (error) {
       console.error('Error fetching enrolled courses:', error);
       res.status(500).json({ message: 'Server error' });
     }
-  });
+  });  
 
-// check enrollment of a learner in a course
+// Check enrollment of a learner in a course
 app.get('/enroll/status', async (req, res) => {
-        const { learner_id, course_id } = req.query;
-      
-        try {
-          const queryResult = await pool.query(
-            'SELECT COUNT(*) AS count FROM course_enrollment WHERE learner_id = $1 AND course_id = $2',
-            [learner_id, course_id]
-          );
-          const enrollmentCount = queryResult.rows[0].count;
-          const isEnrolled = enrollmentCount > 0;
-      
-          res.json({ isEnrolled });
-        } catch (error) {
-          console.error('Error checking enrollment status:', error);
-          res.status(500).json({ message: 'Server error' });
-        }
-});
-
-// Get all learners (users)
-app.get('/learners', async (req, res) => {
-    try {
-      const result = await pool.query('SELECT * FROM learner_details');
-      const learners = result.rows;
+    const { learner_id, course_id } = req.query;
   
-      res.json(learners);
+    try {
+      const { data, error } = await supabase
+        .from('course_enrollment')
+        .select('*', { count: 'exact' })
+        .eq('learner_id', learner_id)
+        .eq('course_id', course_id);
+  
+      if (error) {
+        return res.status(500).json({ message: 'Server error' });
+      }
+  
+      const isEnrolled = data[0].count > 0;
+  
+      res.json({ isEnrolled });
     } catch (error) {
-      console.error('Error retrieving users:', error);
+      console.error('Error checking enrollment status:', error);
       res.status(500).json({ message: 'Server error' });
     }
   });
-
-// Get all instructors (users)
-app.get('/instructors', async (req, res) => {
-    try {
-      const result = await pool.query('SELECT * FROM instructor_details');
-      const instructors = result.rows;
   
-      res.json(instructors);
+  // Get all learners (users)
+  app.get('/learners', async (req, res) => {
+    try {
+      const { data, error } = await supabase
+        .from('learner_details')
+        .select('*');
+  
+      if (error) {
+        return res.status(500).json({ message: 'Server error' });
+      }
+  
+      res.json(data);
     } catch (error) {
-      console.error('Error retrieving users:', error);
+      console.error('Error retrieving learners:', error);
       res.status(500).json({ message: 'Server error' });
     }
   });
-
-// Get all admins (users)
-app.get('/admins', async (req, res) => {
-    try {
-      const result = await pool.query('SELECT * FROM administrator_details');
-      const administrators = result.rows;
   
-      res.json(administrators);
+  // Get all instructors (users)
+  app.get('/instructors', async (req, res) => {
+    try {
+      const { data, error } = await supabase
+        .from('instructor_details')
+        .select('*');
+  
+      if (error) {
+        return res.status(500).json({ message: 'Server error' });
+      }
+  
+      res.json(data);
     } catch (error) {
-      console.error('Error retrieving users:', error);
+      console.error('Error retrieving instructors:', error);
       res.status(500).json({ message: 'Server error' });
     }
   });
-
-// Admin login
-app.post('/admin/login', async (req, res) => {
-  const { email, password } = req.body;
-
-  try {
-    const result = await pool.query(
-      'SELECT * FROM "Admin" WHERE email = $1',
-      [email]
-    );
-
-    const admin = result.rows[0];
-
-    if (!admin) {
-      return res.status(404).json({ message: 'Admin not found' });
+  
+  // Get all admins (users)
+  app.get('/admins', async (req, res) => {
+    try {
+      const { data, error } = await supabase
+        .from('administrator_details')
+        .select('*');
+  
+      if (error) {
+        return res.status(500).json({ message: 'Server error' });
+      }
+  
+      res.json(data);
+    } catch (error) {
+      console.error('Error retrieving administrators:', error);
+      res.status(500).json({ message: 'Server error' });
     }
-
-    const isPasswordValid = await bcrypt.compare(password, admin.password);
-
-    if (!isPasswordValid) {
-      return res.status(401).json({ message: 'Invalid password' });
+  });
+  
+  // Admin login
+  app.post('/admin/login', async (req, res) => {
+    const { email, password } = req.body;
+  
+    try {
+      const { data, error } = await supabase
+        .from('Admin')
+        .select('*')
+        .eq('email', email);
+  
+      if (error) {
+        return res.status(500).json({ message: 'Server error' });
+      }
+  
+      const admin = data[0];
+  
+      if (!admin) {
+        return res.status(404).json({ message: 'Admin not found' });
+      }
+  
+      const isPasswordValid = await bcrypt.compare(password, admin.password);
+  
+      if (!isPasswordValid) {
+        return res.status(401).json({ message: 'Invalid password' });
+      }
+  
+      const token = jwt.sign({ id: admin.id, isAdmin: true }, jwtSecret, {
+        expiresIn: '1h',
+      });
+  
+      res.json({ token });
+    } catch (error) {
+      console.error('Error during admin login:', error);
+      res.status(500).json({ message: 'Server error' });
     }
-
-    const token = jwt.sign({ id: admin.id, isAdmin: true }, jwtSecret, {
-      expiresIn: '1h',
-    });
-
-    res.json({ token });
-  } catch (error) {
-    console.error('Error during admin login:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
+  });  
 
 // Admin adds a new course
 app.post('/admin/courses', async (req, res) => {
-  const { title, description, objectives, level, duration, instructor_id, prerequisites, certification, language, tag, thumbnail_url } = req.body;
-
-  try {
-    await pool.query('INSERT INTO courses (title, description, objectives, level, duration, instructor_id, prerequisites, certification, language, tag, thumbnail_url) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)', [
-      title, description, objectives, level, duration, instructor_id, prerequisites, certification, language, tag, thumbnail_url
-    ]);
-
-    res.json({ message: 'Course added successfully' });
-  } catch (error) {
-    console.error('Error adding course:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// Admin adds a new course content
-app.post('/admin/courses/content', async (req, res) => {
-    const { course_id, content_type, content_url } = req.body;
+    const { title, description, objectives, level, duration, instructor_id, prerequisites, certification, language, tag, thumbnail_url } = req.body;
   
     try {
-      await pool.query('INSERT INTO courses (course_id, content_type, content_url) VALUES ($1, $2, $3)', [
-        course_id, content_type, content_url
-      ]);
+      const { data, error } = await supabase
+        .from('courses')
+        .insert([
+          {
+            title,
+            description,
+            objectives,
+            level,
+            duration,
+            instructor_id,
+            prerequisites,
+            certification,
+            language,
+            tag,
+            thumbnail_url,
+          },
+        ]);
   
-      res.json({ message: 'Course content added successfully' });
+      if (error) {
+        return res.status(500).json({ message: 'Server error' });
+      }
+  
+      res.json({ message: 'Course added successfully' });
     } catch (error) {
       console.error('Error adding course:', error);
       res.status(500).json({ message: 'Server error' });
     }
   });
-
-// Admin adds a new course content - video
-app.post('/admin/courses/content/video', async (req, res) => {
+  
+  // Admin adds a new course content
+  app.post('/admin/courses/content', async (req, res) => {
+    const { course_id, content_type, content_url } = req.body;
+  
+    try {
+      const { error } = await supabase
+        .from('course_content')
+        .insert([
+          {
+            course_id,
+            content_type,
+            content_url,
+          },
+        ]);
+  
+      if (error) {
+        return res.status(500).json({ message: 'Server error' });
+      }
+  
+      res.json({ message: 'Course content added successfully' });
+    } catch (error) {
+      console.error('Error adding course content:', error);
+      res.status(500).json({ message: 'Server error' });
+    }
+  });
+  
+  // Admin adds a new course content - video
+  app.post('/admin/courses/content/video', async (req, res) => {
     const { course_id, content_url } = req.body;
   
     const content_type = 'Video';
     try {
-      await pool.query('INSERT INTO course_content (course_id, content_type, content_url) VALUES ($1, $2, $3)', [
-        course_id, content_type, content_url
-      ]);
+      const { error } = await supabase
+        .from('course_content')
+        .insert([
+          {
+            course_id,
+            content_type,
+            content_url,
+          },
+        ]);
+  
+      if (error) {
+        return res.status(500).json({ message: 'Server error' });
+      }
   
       res.json({ message: 'Course content added successfully' });
     } catch (error) {
-      console.error('Error adding course:', error);
+      console.error('Error adding course content:', error);
       res.status(500).json({ message: 'Server error' });
     }
   });
-
-// Admin adds a new course video
-app.post('/admin/courses/video', async (req, res) => {
+  
+  // Admin adds a new course video
+  app.post('/admin/courses/video', async (req, res) => {
     const { course_id, video_title, video_url } = req.body;
   
     try {
-      await pool.query('INSERT INTO course_video (course_id, video_title, video_url) VALUES ($1, $2, $3)', [
-        course_id, video_title, video_url
-      ]);
+      const { error } = await supabase
+        .from('course_video')
+        .insert([
+          {
+            course_id,
+            video_title,
+            video_url,
+          },
+        ]);
+  
+      if (error) {
+        return res.status(500).json({ message: 'Server error' });
+      }
   
       res.json({ message: 'Course video added successfully' });
     } catch (error) {
@@ -384,33 +502,44 @@ app.post('/admin/courses/video', async (req, res) => {
       res.status(500).json({ message: 'Server error' });
     }
   });
-
-// Get all course videos
-app.get('/admin/courses/video', async (req, res) => {
-    try {
-      const result = await pool.query('SELECT * FROM course_video');
-      const course_videos = result.rows;
   
-      res.json(course_videos);
+  // Get all course videos
+  app.get('/admin/courses/video', async (req, res) => {
+    try {
+      const { data, error } = await supabase
+        .from('course_video')
+        .select('*');
+  
+      if (error) {
+        return res.status(500).json({ message: 'Server error' });
+      }
+  
+      res.json(data);
     } catch (error) {
       console.error('Error retrieving course videos:', error);
       res.status(500).json({ message: 'Server error' });
     }
   });
   
-// Get all course videos for a particular course
-app.get('/admin/courses/video/:course_id', async (req, res) => {
-      try {
+  // Get all course videos for a particular course
+  app.get('/admin/courses/video/:course_id', async (req, res) => {
+    try {
       const course_id = req.params.course_id;
-      const result = await pool.query('SELECT * FROM course_video WHERE course_id = $1', [course_id]);
-      const course_videos = result.rows;
-      
-        res.json(course_videos);
-      } catch (error) {
-        console.error('Error retrieving course videos:', error);
-        res.status(500).json({ message: 'Server error' });
+      const { data, error } = await supabase
+        .from('course_video')
+        .select('*')
+        .eq('course_id', course_id);
+  
+      if (error) {
+        return res.status(500).json({ message: 'Server error' });
       }
-      });
+  
+      res.json(data);
+    } catch (error) {
+      console.error('Error retrieving course videos:', error);
+      res.status(500).json({ message: 'Server error' });
+    }
+  });  
 
 // // insert course video progress
 // app.post('/course-progress', async (req, res) => {
@@ -446,121 +575,146 @@ app.get('/admin/courses/video/:course_id', async (req, res) => {
 //     }
 // })
 
-// Create or update course progress
+/// Create or update course progress
 app.post('/course-progress', async (req, res) => {
     const { learnerId, courseId, videoId, progress } = req.body;
   
     try {
-      const query = `
-        INSERT INTO video_progress (learner_id, course_id, video_id, progress)
-        VALUES ($1, $2, $3, $4)
-        ON CONFLICT (learner_id, course_id, video_id) DO UPDATE
-        SET progress = EXCLUDED.progress
-        RETURNING id
-      `;
-      const values = [learnerId, courseId, videoId, progress];
+      const { data, error } = await supabase
+        .from('video_progress')
+        .upsert([
+          {
+            learner_id: learnerId,
+            course_id: courseId,
+            video_id: videoId,
+            progress,
+          },
+        ]);
   
-      const result = await pool.query(query, values);
-      const insertedId = result.rows[0].id;
+      if (error) {
+        return res.status(500).json({ message: 'Server error' });
+      }
   
-      res.json({ id: insertedId });
+      res.json({ id: data[0].id });
     } catch (error) {
       console.error('Error creating/updating course progress:', error);
       res.status(500).json({ message: 'Server error' });
     }
   });
-
-// get all video progress
-app.get('/video-progress', async (req, res) => {
-    try {
-      const query = 'SELECT * FROM video_progress;';
-      const result = await pool.query(query);
   
-      const videoProgress = result.rows;
-      res.json(videoProgress);
+  // get all video progress
+  app.get('/video-progress', async (req, res) => {
+    try {
+      const { data, error } = await supabase
+        .from('video_progress')
+        .select('*');
+  
+      if (error) {
+        return res.status(500).json({ message: 'Server error' });
+      }
+  
+      res.json(data);
     } catch (error) {
       console.error('Error retrieving video progress:', error);
       res.status(500).json({ message: 'Server error' });
     }
   });
-
-// get video progress for a particular learner, course
-app.get('/video-progress/:learnerId/:courseId', async (req, res) => {
+  
+  // get video progress for a particular learner, course
+  app.get('/video-progress/:learnerId/:courseId', async (req, res) => {
     const { learnerId, courseId } = req.params;
   
     try {
-        const query = 'SELECT * FROM course_progress WHERE learner_id = $1 AND course_id = $2';
-      const values = [learnerId, courseId, videoId];
-      const result = await pool.query(query, values);
+      const { data, error } = await supabase
+        .from('video_progress')
+        .select('*')
+        .eq('learner_id', learnerId)
+        .eq('course_id', courseId);
   
-      const videoProgress = result.rows;
-      res.json(videoProgress);
+      if (error) {
+        return res.status(500).json({ message: 'Server error' });
+      }
+  
+      res.json(data);
     } catch (error) {
       console.error('Error retrieving video progress:', error);
       res.status(500).json({ message: 'Server error' });
     }
   });
-
-// fetch all video_progress and calculate the progress of the course
-app.get('/course-progress/:learnerId/:courseId', async (req, res) => {
-    // const { learnerId, courseId } = req.params;
+  
+  // fetch all video_progress and calculate the progress of the course
+  app.get('/course-progress/:learnerId/:courseId', async (req, res) => {
     const learnerId = parseInt(req.params.learnerId);
     const courseId = parseInt(req.params.courseId);
-
+  
     try {
-        const videoProgressQuery = 'SELECT * FROM video_progress WHERE learner_id = $1 AND course_id = $2;';
-        const videoProgressValues = [learnerId, courseId];
-        const videoProgressResult = await pool.query(videoProgressQuery, videoProgressValues);
-
-        const videoProgress = videoProgressResult.rows;
-
-        // calculate course progress percentage
-        const totalVideosQuery = 'SELECT COUNT(*) AS total_videos FROM course_video WHERE course_id = $1;';
-        const totalVideosValues = [courseId];
-        const totalVideosResult = await pool.query(totalVideosQuery, totalVideosValues);
-
-        const totalVideos = totalVideosResult.rows[0].total_videos;
-        let totalProgress = 0;
-
-        videoProgress.forEach((progress) => {
-            totalProgress += progress.progress;
-          });
-        
-        const courseProgress = totalVideos > 0 ? (totalProgress / (totalVideos * 100)) * 100 : 0;
-
-          res.json({ courseProgress });
+      const { data: videoProgress, error: videoProgressError } = await supabase
+        .from('video_progress')
+        .select('*')
+        .eq('learner_id', learnerId)
+        .eq('course_id', courseId);
+  
+      if (videoProgressError) {
+        return res.status(500).json({ message: 'Server error' });
+      }
+  
+      // calculate course progress percentage
+      const { data: totalVideosData, error: totalVideosError } = await supabase
+        .from('course_video')
+        .select('course_id')
+        .eq('course_id', courseId);
+  
+      if (totalVideosError) {
+        return res.status(500).json({ message: 'Server error' });
+      }
+  
+      const totalVideos = totalVideosData.length;
+      let totalProgress = 0;
+  
+      videoProgress.forEach((progress) => {
+        totalProgress += progress.progress;
+      });
+  
+      const courseProgress = totalVideos > 0 ? (totalProgress / (totalVideos * 100)) * 100 : 0;
+  
+      res.json({ courseProgress });
     } catch (error) {
-        console.error('Error retrieving learner course progress:', error);
-        res.status(500).json({ message: 'Server error' });
+      console.error('Error retrieving learner course progress:', error);
+      res.status(500).json({ message: 'Server error' });
     }
-});
-
-// get video progress for a particular learner, course and video
-app.get('/video-progress/:learnerId/:courseId/:videoId', async (req, res) => {
+  });
+  
+  // get video progress for a particular learner, course and video
+  app.get('/video-progress/:learnerId/:courseId/:videoId', async (req, res) => {
     const { learnerId, courseId, videoId } = req.params;
   
     try {
-      const query = 'SELECT * FROM video_progress WHERE learner_id = $1 AND course_id = $2 AND video_id = $3;';
-      const values = [learnerId, courseId, videoId];
-      const result = await pool.query(query, values);
+      const { data, error } = await supabase
+        .from('video_progress')
+        .select('*')
+        .eq('learner_id', learnerId)
+        .eq('course_id', courseId)
+        .eq('video_id', videoId);
   
-      const videoProgress = result.rows;
-      res.json(videoProgress);
+      if (error) {
+        return res.status(500).json({ message: 'Server error' });
+      }
+  
+      res.json(data);
     } catch (error) {
       console.error('Error retrieving video progress:', error);
       res.status(500).json({ message: 'Server error' });
     }
-  });
+  });  
 
 app.get('/', async (req, res) => {
     res.json({ message: `Server running successfully on port ${port}` });
   });
-
+  
 app.get('/home', async (req, res) => {
-    res.json({ message: `Server running successfully on porter ${port}` });
+    res.json({ message: `Server running successfully on port ${port}` });
   });
-
-// Start the server
+  
 app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
-});
+    console.log(`Server is running on port ${port}`);
+  });
