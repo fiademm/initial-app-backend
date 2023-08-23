@@ -749,6 +749,62 @@ app.post('/course-progress', async (req, res) => {
     }
   });  
 
+// get all quizzes [admin]
+app.get('/quizzes', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('quiz').select();
+    
+    if (error) {
+      throw error;
+    }
+
+    res.status(200).json(data);
+  } catch (error) {
+    console.error('Error getting quizzes: ', error);
+    res.status(500).json({ message: 'Failed to get quizzes' });
+  }
+});
+
+// get quizzes per course [learner, instructor]
+app.get('/quizzes/:courseId', async (req, res) => {
+  try {
+    const courseId = req.params.courseId;
+
+    const { data, error } = await supabase.from('quiz').select().eq('course_id', courseId);
+
+    if (error) {
+      throw error;
+    }
+
+    res.status(200).json(data);
+  } catch (error) {
+    console.error('Error getting quizzes per course: ', error);
+    res.status(500).json({ error: 'Failed to get quizzes for this course'});
+  }
+});
+
+// add quiz [admin]
+app.post('/quizzes', async (req, res) => {
+  try {
+    const { course_id, title, description, total_marks} = req.body;
+
+    const { data, error } = await supabase.from('quiz').insert([
+      {
+        course_id, title, description, total_marks
+      }
+    ]);
+
+    if (error) {
+      throw error;
+    };
+
+    res.status(201).json({ message: 'Quiz added successfully', data});
+  } catch (error) {
+    console.error('Error adding a quiz: ', error);
+    res.status(500).json({ error: 'Failed to add quiz'});
+  }
+});
+
 app.get('/', async (req, res) => {
     res.json({ message: `Server running successfully on port ${port}` });
   });
