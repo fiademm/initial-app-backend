@@ -93,7 +93,7 @@ app.post('/instructor/login', async (req, res) => {
       const user = data[0];
   
       if (!user) {
-        return res.status(404).json({ message: 'User not found' });
+        return res.status(404).json({ message: 'Instructor not found' });
       }
   
       const isPasswordValid = await bcrypt.compare(password, user.password);
@@ -381,7 +381,7 @@ app.get('/enroll/status', async (req, res) => {
   
     try {
       const { data, error } = await supabase
-        .from('Admin')
+        .from('administrator_details')
         .select('*')
         .eq('email', email);
   
