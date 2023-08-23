@@ -133,6 +133,28 @@ app.post('/instructor/signup', async (req, res) => {
     }
 });
 
+// Admin registration
+app.post('/admin/signup', async (req, res) => {
+  const { name, email, password } = req.body;
+
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const { error } = await supabase
+      .from('administrator_details')
+      .insert([{ name, email, password: hashedPassword }]);
+
+    if (error) {
+      return res.status(500).json({ message: 'Server error' });
+    }
+
+    res.json({ message: 'Registration successful' });
+  } catch (error) {
+    console.error('Error during signup:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Learner enrolls in a course
 app.post('/enroll', async (req, res) => {
   const { learner_id, course_id } = req.body;
