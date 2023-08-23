@@ -805,6 +805,77 @@ app.post('/quizzes', async (req, res) => {
   }
 });
 
+// Add question to a quiz
+app.post('/quizzes/:quizId/questions', async (req, res) => {
+  try {
+    const { quizId } = req.params;
+    const { text, options, correctOption } = req.body;
+
+    const { data: question, error } = await supabase
+      .from('question')
+      .insert([
+        {
+          quiz_id: quizId,
+          text,
+          options,
+          correct_option: correctOption,
+        },
+      ])
+      .single();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    res.json(question);
+  } catch (error) {
+    console.error('Error adding question:', error);
+    res.status(500).json({ error: 'Failed to add question' });
+  }
+});
+
+// Get all questions for a particular quiz
+app.get('/quizzes/:quizId/questions', async (req, res) => {
+  try {
+    const { quizId } = req.params;
+
+    const { data: questions, error } = await supabase
+      .from('question')
+      .select('*')
+      .eq('quiz_id', quizId);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    res.json(questions);
+  } catch (error) {
+    console.error('Error getting questions:', error);
+    res.status(500).json({ error: 'Failed to get questions' });
+  }
+});
+
+// Get all questions and correct answers for a particular quiz
+app.get('/quizzes/:quizId/questions-with-answers', async (req, res) => {
+  try {
+    const { quizId } = req.params;
+
+    const { data: questions, error } = await supabase
+      .from('question')
+      .select('*, correct_answer')
+      .eq('quiz_id', quizId);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    res.json(questions);
+  } catch (error) {
+    console.error('Error getting questions with answers:', error);
+    res.status(500).json({ error: 'Failed to get questions with answers' });
+  }
+});
+
 app.get('/', async (req, res) => {
     res.json({ message: `Server running successfully on port ${port}` });
   });
