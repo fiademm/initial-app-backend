@@ -1011,7 +1011,7 @@ app.post('/badges', async (req, res) => {
 });
 
 // get badge by id
-app.get('/badges/:id', async (req, res) => {
+app.get('/mybadges/:badgeId', async (req, res) => {
   const badgeId = req.params.id;
 
   try {
