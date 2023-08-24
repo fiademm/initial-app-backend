@@ -1051,6 +1051,56 @@ app.get('/earned_badges/:learnerId', async (req, res) => {
   }
 });
 
+app.get('/my_earned_badges/:learnerId', async (req, res) => {
+  const { learnerId } = req.params;
+
+  try {
+    // Fetch the badge_id from the earned_badges table for the specified learnerId
+    const { data: earnedBadges, error } = await supabase
+      .from('earned_badges')
+      .select('badge_id, date')
+      .eq('learner_id', learnerId)
+      .limit(1);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    if (earnedBadges.length === 0) {
+      return res.status(404).json({ error: 'No earned badges found for the learner' });
+    }
+
+    const badgeId = earnedBadges[0].badge_id;
+
+    // Fetch the details of the badge with the retrieved badge_id from the badge table
+    const { data: badgeDetails, error: badgeError } = await supabase
+      .from('badge')
+      .select('badge_id, name, description, thumbnail_url')
+      .eq('badge_id', badgeId)
+      .limit(1);
+
+    if (badgeError) {
+      throw new Error(badgeError.message);
+    }
+
+    if (badgeDetails.length === 0) {
+      return res.status(404).json({ error: 'No badge details found' });
+    }
+
+    const earnedBadge = {
+      badge_id: badgeDetails[0].badge_id,
+      name: badgeDetails[0].name,
+      description: badgeDetails[0].description,
+      thumbnail_url: badgeDetails[0].thumbnail_url,
+      date: earnedBadges[0].date,
+    };
+
+    res.json(earnedBadge);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // check whether a learner has already earned a badge
 app.get('/earned_badges/status/:learnerId/:badgeId', async (req, res) => {
   const { learnerId, badgeId } = req.params;
