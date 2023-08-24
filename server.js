@@ -273,7 +273,7 @@ app.get('/courses/content/:course_id', async (req, res) => {
       res.status(500).json({ message: 'Server error' });
     }
   });
-  
+
   // Get all courses for a particular learner
   app.get('/enroll/courses/:learnerId', async (req, res) => {
     const { learnerId } = req.params;
@@ -320,6 +320,30 @@ app.get('/enroll/status', async (req, res) => {
       res.status(500).json({ message: 'Server error' });
     }
   });
+
+  // Check enrollment of a learner in a course
+app.get('/enroll/enrollment_status/:learner_id/:course_id', async (req, res) => {
+  const { learner_id, course_id } = req.params;
+
+  try {
+    const { data, error } = await supabase
+      .from('course_enrollment')
+      .select('*', { count: 'exact' })
+      .eq('learner_id', learner_id)
+      .eq('course_id', course_id);
+
+    if (error) {
+      return res.status(500).json({ message: 'Server error' });
+    }
+
+    const isEnrolled = data[0].count > 0;
+
+    res.json({ isEnrolled });
+  } catch (error) {
+    console.error('Error checking enrollment status:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
   
   // Get all learners (users)
   app.get('/learners', async (req, res) => {
