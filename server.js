@@ -947,6 +947,69 @@ app.get('/quizzes/:quizId/questions-with-answers', async (req, res) => {
   }
 });
 
+// get all badges
+app.get('/badges', async (req, res) => {
+  try {
+    const { data: badges, error } = await supabase
+      .from('badge')
+      .select('*');
+    
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    res.json(badges);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// get badge for a particular quiz
+app.get('/badges/:quizId', async (req, res) => {
+  const { quizId } = req.params;
+
+  try {
+    const { data: badge, error } = await supabase
+      .from('badge')
+      .select('*')
+      .eq('quiz_id', quizId)
+      .single();
+    
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    if (!badge) {
+      return res.status(404).json({ error: 'Badge not found' });
+    }
+
+    res.json(badge);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// insert a badge for a particular quiz
+app.post('/badges', async (req, res) => {
+  const { name, description, quizId, thumbnailUrl } = req.body;
+
+  try {
+    const { data, error } = await supabase
+      .from('badge')
+      .insert([
+        { name, description, quiz_id: quizId, thumbnail_url: thumbnailUrl }
+      ]);
+    
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.get('/', async (req, res) => {
     res.json({ message: `Server running successfully on port ${port}` });
   });
