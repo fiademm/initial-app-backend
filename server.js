@@ -299,14 +299,14 @@ app.get('/courses/content/:course_id', async (req, res) => {
 
 // Check enrollment of a learner in a course
 app.get('/enroll/status', async (req, res) => {
-    const { learner_id, course_id } = req.query;
+    const { learnerId, courseId } = req.query;
   
     try {
       const { data, error } = await supabase
         .from('course_enrollment')
         .select('*', { count: 'exact' })
-        .eq('learner_id', learner_id)
-        .eq('course_id', course_id);
+        .eq('learner_id', learnerId)
+        .eq('course_id', courseId);
   
       if (error) {
         return res.status(500).json({ message: 'Server error' });
@@ -323,14 +323,14 @@ app.get('/enroll/status', async (req, res) => {
 
   // Check enrollment of a learner in a course
 app.get('/enroll/enrollment_status/:learner_id/:course_id', async (req, res) => {
-  const { learner_id, course_id } = req.params;
+  const { learnerId, courseId } = req.params;
 
   try {
     const { data, error } = await supabase
       .from('course_enrollment')
       .select('*', { count: 'exact' })
-      .eq('learner_id', learner_id)
-      .eq('course_id', course_id);
+      .eq('learner_id', learnerId)
+      .eq('course_id', courseId);
 
     if (error) {
       return res.status(500).json({ message: 'Server error' });
