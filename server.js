@@ -274,9 +274,10 @@ app.get('/courses/content/:course_id', async (req, res) => {
     }
   });
 
-  // Check whether a user is enrolled in a particular course
+// Check whether a user is enrolled in a particular course
 app.get('/enrolled-courses/check/:learnerId/:courseId', async (req, res) => {
-  const { learnerId, courseId} = req.params;
+  const learnerId = req.params.learnerId;
+  const courseId = req.params.courseId;
 
   try {
     const { data, error } = await supabase
@@ -289,11 +290,10 @@ app.get('/enrolled-courses/check/:learnerId/:courseId', async (req, res) => {
       throw error;
     }
 
-    const isEnrolled = data[0].count > 0;  
-    res.json({ isEnrolled });
+    const isEnrolled = data.length > 0;
+    res.json({ enrolled: isEnrolled });
   } catch (error) {
-    console.error('Error checking enrollment status:', error);
-    throw error;
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
