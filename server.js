@@ -76,6 +76,31 @@ app.post('/signup', async (req, res) => {
   }
 });
 
+// get learner details by id
+app.get('/learners/:userId', async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const { data: learner, error } = await supabase
+      .from('learner_details')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    if (learner) {
+      res.json(learner);
+    } else {
+      res.status(404).json({ message: 'Learner not found' });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 // Instructor login
 app.post('/instructor/login', async (req, res) => {
     const { email, password } = req.body;
