@@ -1010,6 +1010,90 @@ app.post('/badges', async (req, res) => {
   }
 });
 
+// Route to get all earned_badges for a particular learner
+app.get('/earned_badges/:learnerId', async (req, res) => {
+  const { learnerId } = req.params;
+
+  try {
+    const { data: earnedBadges, error } = await supabase
+      .from('earned_badges')
+      .select('*')
+      .eq('learner_id', learnerId);
+    
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    res.json(earnedBadges);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// check whether a learner has already earned a badge
+app.get('/earned_badges/status/:learnerId/:badgeId', async (req, res) => {
+  const { learnerId, badgeId } = req.params;
+
+  try {
+    const { data: earnedBadge, error } = await supabase
+      .from('earned_badges')
+      .select('*')
+      .eq('learner_id', learnerId)
+      .eq('badge_id', badgeId)
+      .single();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    if (earnedBadge) {
+      res.json({ earned: true });
+    } else {
+      res.json({ earned: false });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Route to get all earned badges
+app.get('/earned_badges', async (req, res) => {
+  try {
+    const { data: earnedBadges, error } = await supabase
+      .from('earned_badges')
+      .select('*');
+    
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    res.json(earnedBadges);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Route to add an earned badge for a specific learner
+app.post('/earned_badges', async (req, res) => {
+  const { learnerId, badgeId } = req.body;
+
+  try {
+    const { data, error } = await supabase
+      .from('earned_badges')
+      .insert([
+        { learner_id: learnerId, badge_id: badgeId }
+      ]);
+    
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.get('/', async (req, res) => {
     res.json({ message: `Server running successfully on port ${port}` });
   });
