@@ -1051,16 +1051,66 @@ app.get('/earned_badges/:learnerId', async (req, res) => {
   }
 });
 
+// app.get('/my_earned_badges/:learnerId', async (req, res) => {
+//   const { learnerId } = req.params;
+
+//   try {
+//     // Fetch the badge_id from the earned_badges table for the specified learnerId
+//     const { data: earnedBadges, error } = await supabase
+//       .from('earned_badges')
+//       .select('badge_id, date')
+//       .eq('learner_id', learnerId)
+//       .limit(1);
+
+//     if (error) {
+//       throw new Error(error.message);
+//     }
+
+//     if (earnedBadges.length === 0) {
+//       return res.status(404).json({ error: 'No earned badges found for the learner' });
+//     }
+
+//     const badgeId = earnedBadges[0].badge_id;
+
+//     // Fetch the details of the badge with the retrieved badge_id from the badge table
+//     const { data: badgeDetails, error: badgeError } = await supabase
+//       .from('badge')
+//       .select('badge_id, name, description, thumbnail_url')
+//       .eq('badge_id', badgeId)
+//       .limit(1);
+
+//     if (badgeError) {
+//       throw new Error(badgeError.message);
+//     }
+
+//     if (badgeDetails.length === 0) {
+//       return res.status(404).json({ error: 'No badge details found' });
+//     }
+
+//     const earnedBadge = {
+//       badge_id: badgeDetails[0].badge_id,
+//       name: badgeDetails[0].name,
+//       description: badgeDetails[0].description,
+//       thumbnail_url: badgeDetails[0].thumbnail_url,
+//       date: earnedBadges[0].date,
+//     };
+
+//     res.json(earnedBadge);
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// });
+
+// Route to get the details of all earned badges for a learner
 app.get('/my_earned_badges/:learnerId', async (req, res) => {
   const { learnerId } = req.params;
 
   try {
-    // Fetch the badge_id from the earned_badges table for the specified learnerId
+    // Fetch the badge_id and date from the earned_badges table for the specified learnerId
     const { data: earnedBadges, error } = await supabase
       .from('earned_badges')
       .select('badge_id, date')
-      .eq('learner_id', learnerId)
-      .limit(1);
+      .eq('learner_id', learnerId);
 
     if (error) {
       throw new Error(error.message);
@@ -1070,14 +1120,12 @@ app.get('/my_earned_badges/:learnerId', async (req, res) => {
       return res.status(404).json({ error: 'No earned badges found for the learner' });
     }
 
-    const badgeId = earnedBadges[0].badge_id;
-
-    // Fetch the details of the badge with the retrieved badge_id from the badge table
+    // Fetch the details of all the earned badges using the retrieved badge_ids
+    const badgeIds = earnedBadges.map((earnedBadge) => earnedBadge.badge_id);
     const { data: badgeDetails, error: badgeError } = await supabase
       .from('badge')
       .select('badge_id, name, description, thumbnail_url')
-      .eq('badge_id', badgeId)
-      .limit(1);
+      .in('badge_id', badgeIds);
 
     if (badgeError) {
       throw new Error(badgeError.message);
@@ -1087,15 +1135,19 @@ app.get('/my_earned_badges/:learnerId', async (req, res) => {
       return res.status(404).json({ error: 'No badge details found' });
     }
 
-    const earnedBadge = {
-      badge_id: badgeDetails[0].badge_id,
-      name: badgeDetails[0].name,
-      description: badgeDetails[0].description,
-      thumbnail_url: badgeDetails[0].thumbnail_url,
-      date: earnedBadges[0].date,
-    };
+    // Combine the earned badge details with the respective badge details
+    const earnedBadgesWithDetails = earnedBadges.map((earnedBadge) => {
+      const badgeDetail = badgeDetails.find((badge) => badge.badge_id === earnedBadge.badge_id);
+      return {
+        badge_id: badgeDetail.badge_id,
+        name: badgeDetail.name,
+        description: badgeDetail.description,
+        thumbnail_url: badgeDetail.thumbnail_url,
+        date: earnedBadge.date,
+      };
+    });
 
-    res.json(earnedBadge);
+    res.json(earnedBadgesWithDetails);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
