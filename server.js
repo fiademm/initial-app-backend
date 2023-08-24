@@ -1010,7 +1010,28 @@ app.post('/badges', async (req, res) => {
   }
 });
 
-// Route to get all earned_badges for a particular learner
+// get badge by id
+app.get('/badges/:id', async (req, res) => {
+  const badgeId = req.params.id;
+
+  try {
+    const { data, error } = await supabase
+      .from('badge')
+      .select('*')
+      .eq('badge_id', badgeId)
+      .single();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// get all earned_badges for a particular learner
 app.get('/earned_badges/:learnerId', async (req, res) => {
   const { learnerId } = req.params;
 
@@ -1073,7 +1094,7 @@ app.get('/earned_badges', async (req, res) => {
   }
 });
 
-// Route to add an earned badge for a specific learner
+// add an earned badge for a specific learner
 app.post('/earned_badges', async (req, res) => {
   const { learnerId, badgeId } = req.body;
 
