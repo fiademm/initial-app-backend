@@ -1296,6 +1296,32 @@ app.get('/leaderboard', async (req, res) => {
   }
 });
 
+// Check if the learner has not reviewed the course already
+app.get('/course_reviews/check', async (req, res) => {
+  try {
+    const { learner_id, course_id } = req.query;
+
+    const { data: existingReviews, error } = await supabase
+      .from('course_reviews')
+      .select('*')
+      .eq('learner_id', learner_id)
+      .eq('course_id', course_id);
+
+    if (error) {
+      return res.status(500).json({ error: 'Failed to check course reviews.' });
+    }
+
+    if (existingReviews && existingReviews.length > 0) {
+      return res.status(400).json({ error: 'The learner has already reviewed the course.' });
+    }
+
+    res.status(200).json({ message: 'The learner has not reviewed the course yet.' });
+  } catch (error) {
+    console.error('Error checking course reviews:', error);
+    res.status(500).json({ error: 'An unexpected error occurred.' });
+  }
+});
+
 // Insert course_review from a particular learner for a particular course
 app.post('/course_reviews', async (req, res) => {
   try {
