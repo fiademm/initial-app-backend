@@ -1349,14 +1349,13 @@ app.get('/quiz_attempt/learner/:learnerId/quiz/:quizId', async (req, res) => {
 //   }
 // });
 
-// generate leaderboard for 10 people
+// Generate leaderboard limited to 10 rows
 app.get('/leaderboard', async (req, res) => {
   try {
     const { data: leaderboard, error } = await supabase
       .from('quiz_attempt')
-      .select('learner_id, SUM(score) AS total_score, learner_details.name')
-      .join('learner_details', { 'quiz_attempt.learner_id': 'learner_details.id' })
-      .group('learner_id, learner_details.name')
+      .select('quiz_attempt.learner_id, SUM(quiz_attempt.score) AS total_score')
+      .group('quiz_attempt.learner_id')
       .order('total_score', { ascending: false })
       .limit(10);
 
@@ -1364,7 +1363,28 @@ app.get('/leaderboard', async (req, res) => {
       throw new Error(error.message);
     }
 
-    res.json(leaderboard);
+    const learnerIds = leaderboard.map((entry) => entry.learner_id);
+
+    const { data: learnerDetails, error: learnerError } = await supabase
+      .from('learner_details')
+      .select('id, name')
+      .in('id', learnerIds);
+
+    if (learnerError) {
+      throw new Error(learnerError.message);
+    }
+
+    const leaderboardWithNames = leaderboard.map((entry) => {
+      const learner = learnerDetails.find(
+        (details) => details.id === entry.learner_id
+      );
+      return {
+        ...entry,
+        name: learner ? learner.name : null,
+      };
+    });
+
+    res.json(leaderboardWithNames);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
