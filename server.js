@@ -1354,15 +1354,32 @@ app.get('/leaderboard', async (req, res) => {
     const { data: leaderboard, error } = await supabase
       .from('quiz_attempt')
       .select('learner_id, SUM(score) AS total_score')
-      .group('learner_id')
-      .order('total_score', { ascending: false })
+      .groupBy('learner_id')
+      .orderBy('total_score', { ascending: false })
       .limit(19);
 
     if (error) {
       throw new Error(error.message);
     }
 
-    res.json(leaderboard);
+    // Fetch learner names from learner_details table
+    const learnerIds = leaderboard.map((entry) => entry.learner_id);
+    const { data: learners, error: learnerError } = await supabase
+      .from('learner_details')
+      .select('id, name')
+      .in('id', learnerIds);
+
+    if (learnerError) {
+      throw new Error(learnerError.message);
+    }
+
+    // Map learner names to leaderboard entries
+    const leaderboardWithNames = leaderboard.map((entry) => {
+      const learner = learners.find((learner) => learner.id === entry.learner_id);
+      return { ...entry, learnerName: learner ? learner.name : '' };
+    });
+
+    res.json(leaderboardWithNames);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
