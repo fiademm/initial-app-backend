@@ -1329,13 +1329,34 @@ app.get('/quiz_attempt/learner/:learnerId/quiz/:quizId', async (req, res) => {
   }
 });
 
-// Generate leaderboard limited to 10 rows
+// // Generate leaderboard limited to 10 rows
+// app.get('/leaderboard', async (req, res) => {
+//   try {
+//     const { data: leaderboard, error } = await supabase
+//       .from('quiz_attempt')
+//       .select('learner_id, SUM(score) AS total_score')
+//       .group('learner_id')
+//       .order('total_score', { ascending: false })
+//       .limit(10);
+
+//     if (error) {
+//       throw new Error(error.message);
+//     }
+
+//     res.json(leaderboard);
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// });
+
+// generate leaderboard for 10 people
 app.get('/leaderboard', async (req, res) => {
   try {
     const { data: leaderboard, error } = await supabase
       .from('quiz_attempt')
-      .select('learner_id, SUM(score) AS total_score')
-      .group('learner_id')
+      .select('learner_id, SUM(score) AS total_score, learner_details.name')
+      .join('learner_details', { 'quiz_attempt.learner_id': 'learner_details.id' })
+      .group('learner_id, learner_details.name')
       .order('total_score', { ascending: false })
       .limit(10);
 
