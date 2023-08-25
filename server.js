@@ -1399,6 +1399,32 @@ app.get('/course_reviews/learner/:learnerId', async (req, res) => {
   }
 });
 
+// get learner by id
+app.get('/learner/:id', async (req, res) => {
+  try {
+    const learnerId = req.params.id;
+
+    const { data, error } = await supabase
+      .from('learner_details')
+      .select('name')
+      .eq('id', learnerId)
+      .single();
+
+    if (error) {
+      return res.status(500).json({ error: 'Failed to fetch learner name.' });
+    }
+
+    if (!data) {
+      return res.status(404).json({ error: 'Learner not found.' });
+    }
+
+    res.json(data.name);
+  } catch (error) {
+    console.error('Error getting learner name:', error);
+    res.status(500).json({ error: 'An unexpected error occurred.' });
+  }
+});
+
 // // Insert course_review from a particular learner for a particular course
 // app.post('/course_reviews', async (req, res) => {
 //   try {
