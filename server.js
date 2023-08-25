@@ -1051,56 +1051,6 @@ app.get('/earned_badges/:learnerId', async (req, res) => {
   }
 });
 
-// app.get('/my_earned_badges/:learnerId', async (req, res) => {
-//   const { learnerId } = req.params;
-
-//   try {
-//     // Fetch the badge_id from the earned_badges table for the specified learnerId
-//     const { data: earnedBadges, error } = await supabase
-//       .from('earned_badges')
-//       .select('badge_id, date')
-//       .eq('learner_id', learnerId)
-//       .limit(1);
-
-//     if (error) {
-//       throw new Error(error.message);
-//     }
-
-//     if (earnedBadges.length === 0) {
-//       return res.status(404).json({ error: 'No earned badges found for the learner' });
-//     }
-
-//     const badgeId = earnedBadges[0].badge_id;
-
-//     // Fetch the details of the badge with the retrieved badge_id from the badge table
-//     const { data: badgeDetails, error: badgeError } = await supabase
-//       .from('badge')
-//       .select('badge_id, name, description, thumbnail_url')
-//       .eq('badge_id', badgeId)
-//       .limit(1);
-
-//     if (badgeError) {
-//       throw new Error(badgeError.message);
-//     }
-
-//     if (badgeDetails.length === 0) {
-//       return res.status(404).json({ error: 'No badge details found' });
-//     }
-
-//     const earnedBadge = {
-//       badge_id: badgeDetails[0].badge_id,
-//       name: badgeDetails[0].name,
-//       description: badgeDetails[0].description,
-//       thumbnail_url: badgeDetails[0].thumbnail_url,
-//       date: earnedBadges[0].date,
-//     };
-
-//     res.json(earnedBadge);
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// });
-
 // Route to get the details of all earned badges for a learner
 app.get('/my_earned_badges/:learnerId', async (req, res) => {
   const { learnerId } = req.params;
@@ -1329,62 +1279,6 @@ app.get('/quiz_attempt/learner/:learnerId/quiz/:quizId', async (req, res) => {
   }
 });
 
-// // Generate leaderboard limited to 10 rows
-// app.get('/leaderboard', async (req, res) => {
-//   try {
-//     const { data: leaderboard, error } = await supabase
-//       .from('quiz_attempt')
-//       .select('learner_id, SUM(score) AS total_score')
-//       .group('learner_id')
-//       .order('total_score', { ascending: false })
-//       .limit(10);
-
-//     if (error) {
-//       throw new Error(error.message);
-//     }
-
-//     res.json(leaderboard);
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// });
-
-// app.get('/leaderboard', async (req, res) => {
-//   try {
-//     const { data: leaderboard, error } = await supabase
-//       .from('quiz_attempt')
-//       .select('learner_id, SUM(score) AS total_score')
-//       .groupBy('learner_id')
-//       .orderBy('total_score', { ascending: false })
-//       .limit(19);
-
-//     if (error) {
-//       throw new Error(error.message);
-//     }
-
-//     // Fetch learner names from learner_details table
-//     const learnerIds = leaderboard.map((entry) => entry.learner_id);
-//     const { data: learners, error: learnerError } = await supabase
-//       .from('learner_details')
-//       .select('id, name')
-//       .in('id', learnerIds);
-
-//     if (learnerError) {
-//       throw new Error(learnerError.message);
-//     }
-
-//     // Map learner names to leaderboard entries
-//     const leaderboardWithNames = leaderboard.map((entry) => {
-//       const learner = learners.find((learner) => learner.id === entry.learner_id);
-//       return { ...entry, learnerName: learner ? learner.name : '' };
-//     });
-
-//     res.json(leaderboardWithNames);
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// });
-
 app.get('/leaderboard', async (req, res) => {
   try {
     const { data: topScores, error } = await supabase
@@ -1401,6 +1295,158 @@ app.get('/leaderboard', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// Insert course_review from a particular learner for a particular course
+app.post('/course_reviews', async (req, res) => {
+  try {
+    const { course_id, learner_id, review_text, rating } = req.body;
+
+    // Check if the learner has already reviewed the course
+    const { data: existingReviews, error } = await supabase
+      .from('course_reviews')
+      .select('*')
+      .eq('course_id', course_id)
+      .eq('learner_id', learner_id);
+
+    if (existingReviews && existingReviews.length > 0) {
+      return res.status(400).json({ error: 'The learner has already reviewed the course.' });
+    }
+
+    // Insert the course_review
+    const { data: newReview, error: insertError } = await supabase
+      .from('course_reviews')
+      .insert({ course_id, learner_id, review_text, rating })
+      .single();
+
+    if (insertError) {
+      return res.status(500).json({ error: 'Failed to insert the course review.' });
+    }
+
+    res.status(201).json(newReview);
+  } catch (error) {
+    console.error('Error inserting course review:', error);
+    res.status(500).json({ error: 'An unexpected error occurred.' });
+  }
+});
+
+// Get 5 recent reviews based on date for a particular course
+app.get('/course_reviews/recent/:courseId', async (req, res) => {
+  try {
+    const courseId = req.params.courseId;
+
+    const { data: reviews, error } = await supabase
+      .from('course_reviews')
+      .select('*')
+      .eq('course_id', courseId)
+      .order('id', { ascending: false })
+      .limit(5);
+
+    if (error) {
+      return res.status(500).json({ error: 'Failed to fetch recent course reviews.' });
+    }
+
+    res.json(reviews);
+  } catch (error) {
+    console.error('Error getting recent course reviews:', error);
+    res.status(500).json({ error: 'An unexpected error occurred.' });
+  }
+});
+
+// Get reviews for a particular learner
+app.get('/course_reviews/learner/:learnerId', async (req, res) => {
+  try {
+    const learnerId = req.params.learnerId;
+
+    const { data: reviews, error } = await supabase
+      .from('course_reviews')
+      .select('*')
+      .eq('learner_id', learnerId);
+
+    if (error) {
+      return res.status(500).json({ error: 'Failed to fetch learner course reviews.' });
+    }
+
+    res.json(reviews);
+  } catch (error) {
+    console.error('Error getting learner course reviews:', error);
+    res.status(500).json({ error: 'An unexpected error occurred.' });
+  }
+});
+
+// // Insert course_review from a particular learner for a particular course
+// app.post('/course_reviews', async (req, res) => {
+//   try {
+//     const { course_id, learner_id, review_text, rating } = req.body;
+
+//     // Check if the learner has already reviewed the course
+//     const { data: existingReviews, error } = await supabase
+//       .from('course_reviews')
+//       .select('*')
+//       .eq('course_id', course_id)
+//       .eq('learner_id', learner_id);
+
+//     if (existingReviews && existingReviews.length > 0) {
+//       return res.status(400).json({ error: 'The learner has already reviewed the course.' });
+//     }
+
+//     // Insert the course_review
+//     const { data: newReview, error: insertError } = await supabase
+//       .from('course_reviews')
+//       .insert({ course_id, learner_id, review_text, rating })
+//       .single();
+
+//     if (insertError) {
+//       return res.status(500).json({ error: 'Failed to insert the course review.' });
+//     }
+
+//     res.status(201).json(newReview);
+//   } catch (error) {
+//     console.error('Error inserting course review:', error);
+//     res.status(500).json({ error: 'An unexpected error occurred.' });
+//   }
+// });
+
+// // Get reviews for a particular course
+// app.get('/course_reviews/:courseId', async (req, res) => {
+//   try {
+//     const courseId = req.params.courseId;
+
+//     const { data: reviews, error } = await supabase
+//       .from('course_reviews')
+//       .select('*')
+//       .eq('course_id', courseId);
+
+//     if (error) {
+//       return res.status(500).json({ error: 'Failed to fetch course reviews.' });
+//     }
+
+//     res.json(reviews);
+//   } catch (error) {
+//     console.error('Error getting course reviews:', error);
+//     res.status(500).json({ error: 'An unexpected error occurred.' });
+//   }
+// });
+
+// // Get reviews for a particular learner
+// app.get('/course_reviews/learner/:learnerId', async (req, res) => {
+//   try {
+//     const learnerId = req.params.learnerId;
+
+//     const { data: reviews, error } = await supabase
+//       .from('course_reviews')
+//       .select('*')
+//       .eq('learner_id', learnerId);
+
+//     if (error) {
+//       return res.status(500).json({ error: 'Failed to fetch course reviews.' });
+//     }
+
+//     res.json(reviews);
+//   } catch (error) {
+//     console.error('Error getting course reviews:', error);
+//     res.status(500).json({ error: 'An unexpected error occurred.' });
+//   }
+// });
 
 app.get('/', async (req, res) => {
     res.json({ message: `Server running successfully on port ${port}` });
