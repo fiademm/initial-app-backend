@@ -1349,27 +1349,14 @@ app.get('/quiz_attempt/learner/:learnerId/quiz/:quizId', async (req, res) => {
 //   }
 // });
 
-// Generate leaderboard limited to 10 rows
 app.get('/leaderboard', async (req, res) => {
   try {
     const { data: leaderboard, error } = await supabase
       .from('quiz_attempt')
-      .select(`
-        quiz_attempt.learner_id,
-        SUM(quiz_attempt.score) AS total_score,
-        learner_details.name
-      `)
-      .limit(10)
+      .select('learner_id, SUM(score) AS total_score')
+      .group('learner_id')
       .order('total_score', { ascending: false })
-      .neq('learner_details.name', null)
-      .join(`
-        (
-          SELECT id, name
-          FROM learner_details
-        ) AS learner_details
-      `, {
-        'quiz_attempt.learner_id': 'learner_details.id',
-      });
+      .limit(19);
 
     if (error) {
       throw new Error(error.message);
