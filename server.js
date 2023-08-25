@@ -1219,7 +1219,7 @@ app.post('/earned_badges', async (req, res) => {
 
 // Add quiz attempt for a particular learner in a particular quiz
 app.post('/quiz_attempt', async (req, res) => {
-  const { learner_id, quiz_id, score } = req.body;
+  const { learner_id, quiz_id, score, learner_name } = req.body;
 
   try {
     // Check if the learner has already taken the quiz
@@ -1240,7 +1240,7 @@ app.post('/quiz_attempt', async (req, res) => {
     // Insert the quiz attempt
     const { data: newAttempt, error: insertError } = await supabase
       .from('quiz_attempt')
-      .insert([{ learner_id, quiz_id, score, date: new Date().toISOString() }]);
+      .insert([{ learner_id, quiz_id, score, date: new Date().toISOString(), learner_name }]);
 
     if (insertError) {
       throw new Error(insertError.message);
