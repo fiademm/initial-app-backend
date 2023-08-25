@@ -1217,6 +1217,138 @@ app.post('/earned_badges', async (req, res) => {
   }
 });
 
+// Add quiz attempt for a particular learner in a particular quiz
+app.post('/quiz_attempt', async (req, res) => {
+  const { learner_id, quiz_id, score } = req.body;
+
+  try {
+    // Check if the learner has already taken the quiz
+    const { data: existingAttempts, error } = await supabase
+      .from('quiz_attempt')
+      .select('attempt_id')
+      .eq('learner_id', learner_id)
+      .eq('quiz_id', quiz_id);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    if (existingAttempts.length > 0) {
+      return res.status(400).json({ error: 'Learner has already taken the quiz' });
+    }
+
+    // Insert the quiz attempt
+    const { data: newAttempt, error: insertError } = await supabase
+      .from('quiz_attempt')
+      .insert([{ learner_id, quiz_id, score, date: new Date().toISOString() }]);
+
+    if (insertError) {
+      throw new Error(insertError.message);
+    }
+
+    res.json(newAttempt[0]);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Checks if a learner has already taken a particular quiz
+app.get('/quiz_attempt/check/:learnerId/:quizId', async (req, res) => {
+  const { learnerId, quizId } = req.params;
+
+  try {
+    const { data: attempts, error } = await supabase
+      .from('quiz_attempt')
+      .select('attempt_id')
+      .eq('learner_id', learnerId)
+      .eq('quiz_id', quizId);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    res.json({ hasTakenQuiz: attempts.length > 0 });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get all quiz attempts
+app.get('/quiz_attempt', async (req, res) => {
+  try {
+    const { data: attempts, error } = await supabase.from('quiz_attempt').select('*');
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    res.json(attempts);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get quiz attempts for a particular learner
+app.get('/quiz_attempt/learner/:learnerId', async (req, res) => {
+  const { learnerId } = req.params;
+
+  try {
+    const { data: attempts, error } = await supabase
+      .from('quiz_attempt')
+      .select('*')
+      .eq('learner_id', learnerId);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    res.json(attempts);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get quiz attempts for a particular learner in a particular quiz
+app.get('/quiz_attempt/learner/:learnerId/quiz/:quizId', async (req, res) => {
+  const { learnerId, quizId } = req.params;
+
+  try {
+    const { data: attempts, error } = await supabase
+      .from('quiz_attempt')
+      .select('*')
+      .eq('learner_id', learnerId)
+      .eq('quiz_id', quizId);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    res.json(attempts);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Generate leaderboard limited to 10 rows
+app.get('/leaderboard', async (req, res) => {
+  try {
+    const { data: leaderboard, error } = await supabase
+      .from('quiz_attempt')
+      .select('learner_id, SUM(score) AS total_score')
+      .group('learner_id')
+      .order('total_score', { ascending: false })
+      .limit(10);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    res.json(leaderboard);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.get('/', async (req, res) => {
     res.json({ message: `Server running successfully on port ${port}` });
   });
