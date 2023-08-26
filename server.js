@@ -1750,23 +1750,17 @@ app.post('/question/create', async (req, res) => {
   }
 });
 
-app.get('/total-rows', async (req, res) => {
+app.get('/total-rows-learner', async (req, res) => {
   try {
-    const queries = [
-      supabase.from('learner_details').select('*').count(),
-      supabase.from('instructor_details').select('*').count(),
-      supabase.from('courses').select('*').count(),
-      supabase.from('course_enrollment').select('*').count()
-    ];
+    const { data, error } = await supabase
+      .from('learner_details')
+      .select('id', { count: 'exact' });
 
-    const [learnerCount, instructorCount, courseCount, enrollmentCount] = await Promise.all(queries);
+    if (error) {
+      return res.status(500).json({ error: 'Failed to fetch total rows.' });
+    }
 
-    const totalRows = {
-      learner_details: learnerCount.data[0].count,
-      instructor_details: instructorCount.data[0].count,
-      courses: courseCount.data[0].count,
-      course_enrollment: enrollmentCount.data[0].count
-    };
+    const totalRows = data[0]?.count || 0;
 
     res.json({ totalRows });
   } catch (error) {
