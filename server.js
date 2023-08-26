@@ -1750,21 +1750,23 @@ app.post('/question/create', async (req, res) => {
   }
 });
 
-app.get('/total-rows-learner', async (req, res) => {
+app.get('/learner-details-total', async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('learner_details')
-      .select('id', { count: 'exact' });
+      .select('*')
+      .count('id', { as: 'total' });
 
     if (error) {
-      return res.status(500).json({ error: 'Failed to fetch total rows.' });
+      return res.status(500).json({ error: 'Failed to fetch learner details.' });
     }
 
-    const totalRows = data[0]?.count || 0;
+    const totalRows = data[0]?.total || 0;
+    const details = data.slice(0, data.length - 1);
 
-    res.json({ totalRows });
+    res.json({ totalRows, details });
   } catch (error) {
-    console.error('Error fetching total rows:', error);
+    console.error('Error fetching learner details:', error);
     res.status(500).json({ error: 'An unexpected error occurred.' });
   }
 });
