@@ -1786,6 +1786,24 @@ app.get('/sorted-earned-badges', async (req, res) => {
   }
 });
 
+// data from the view
+app.get('/sorted-course-enrollment', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('sorted_course_enrollment_view')
+      .select('*');
+
+    if (error) {
+      return res.status(500).json({ error: 'Failed to fetch data from the view.' });
+    }
+
+    res.json(data);
+  } catch (error) {
+    console.error('Error fetching data from the view:', error);
+    res.status(500).json({ error: 'An unexpected error occurred.' });
+  }
+});
+
 app.get('/', async (req, res) => {
     res.json({ message: `Server running successfully on port ${port}` });
   });
