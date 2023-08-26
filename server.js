@@ -1751,21 +1751,19 @@ app.post('/question/create', async (req, res) => {
 });
 
 // count total learners
-app.get('/learner-details/count', async (req, res) => {
+app.get('/details-count', async (req, res) => {
   try {
-    const { count, error } = await supabase
-      .from('learner_details')
-      .select('count(*)');
+    const { data, error } = await supabase
+      .from('details_count_view')
+      .select('*');
 
     if (error) {
-      return res.status(500).json({ error: 'Failed to count learner details.' });
+      return res.status(500).json({ error: 'Failed to fetch data from the view.' });
     }
 
-    const totalCount = count[0].count;
-
-    res.json({ count: totalCount });
+    res.json(data[0]);
   } catch (error) {
-    console.error('Error counting learner details:', error);
+    console.error('Error fetching data from the view:', error);
     res.status(500).json({ error: 'An unexpected error occurred.' });
   }
 });
