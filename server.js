@@ -1824,6 +1824,32 @@ app.post('/events', async (req, res) => {
   }
 });
 
+// Route to fetch course details for a given courseId
+app.get('/course/details/:courseId', async (req, res) => {
+  try {
+    const courseId = req.params.courseId;
+
+    const { data, error } = await supabase
+      .from('courses')
+      .select('*')
+      .eq('id', courseId)
+      .single();
+
+    if (error) {
+      return res.status(500).json({ error: 'Failed to fetch course details.' });
+    }
+
+    if (!data) {
+      return res.status(404).json({ error: 'Course not found.' });
+    }
+
+    res.json(data);
+  } catch (error) {
+    console.error('Error fetching course details:', error);
+    res.status(500).json({ error: 'An unexpected error occurred.' });
+  }
+});
+
 app.get('/', async (req, res) => {
     res.json({ message: `Server running successfully on port ${port}` });
   });
