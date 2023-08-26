@@ -1750,7 +1750,7 @@ app.post('/question/create', async (req, res) => {
   }
 });
 
-// count total learners
+// count total for dashboard
 app.get('/details-count', async (req, res) => {
   try {
     const { data, error } = await supabase
@@ -1762,6 +1762,24 @@ app.get('/details-count', async (req, res) => {
     }
 
     res.json(data[0]);
+  } catch (error) {
+    console.error('Error fetching data from the view:', error);
+    res.status(500).json({ error: 'An unexpected error occurred.' });
+  }
+});
+
+// get data from the view
+app.get('/sorted-earned-badges', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('sorted_earned_badges_view')
+      .select('*');
+
+    if (error) {
+      return res.status(500).json({ error: 'Failed to fetch data from the view.' });
+    }
+
+    res.json(data);
   } catch (error) {
     console.error('Error fetching data from the view:', error);
     res.status(500).json({ error: 'An unexpected error occurred.' });
