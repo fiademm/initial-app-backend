@@ -1325,7 +1325,7 @@ app.get('/course_reviews/check', async (req, res) => {
 // Insert course_review from a particular learner for a particular course
 app.post('/course_reviews', async (req, res) => {
   try {
-    const { course_id, learner_id, review_text, rating } = req.body;
+    const { course_id, learner_id, review_text, rating, learner_name } = req.body;
 
     // Check if the learner has already reviewed the course
     const { data: existingReviews, error } = await supabase
@@ -1499,6 +1499,256 @@ app.get('/learner/:id', async (req, res) => {
 //     res.status(500).json({ error: 'An unexpected error occurred.' });
 //   }
 // });
+
+/* ============================================================================ */
+/*                           R O U T E S  F O R  A D M I N                       */
+/* ============================================================================ */
+// add new administrator
+app.post('/admin/create', async (req, res) => {
+  try {
+    const {
+      name,
+      email,
+      password,
+      organization_affiliation,
+      role,
+      phone,
+      linkedin,
+      physical_address,
+      thumbnail_url
+    } = req.body;
+
+    // Hash the password using bcrypt
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const { data, error } = await supabase
+      .from('administrator_details')
+      .insert([
+        {
+          name,
+          email,
+          password: hashedPassword,
+          organization_affiliation,
+          role,
+          phone,
+          linkedin,
+          physical_address,thumbnail_url
+        }
+      ]);
+
+    if (error) {
+      return res.status(500).json({ error: 'Failed to create administrator.' });
+    }
+
+    res.json({ message: 'Administrator created successfully.' });
+  } catch (error) {
+    console.error('Error creating administrator:', error);
+    res.status(500).json({ error: 'An unexpected error occurred.' });
+  }
+});
+
+// add a badge
+app.post('/badge/create', async (req, res) => {
+  try {
+    const { name, description, quizId, thumbnailUrl } = req.body;
+
+    const { data, error } = await supabase
+      .from('badge')
+      .insert([
+        {
+          name,
+          description,
+          quiz_id: quizId,
+          thumbnail_url: thumbnailUrl
+        }
+      ]);
+
+    if (error) {
+      return res.status(500).json({ error: 'Failed to create badge.' });
+    }
+
+    res.json({ message: 'Badge created successfully.' });
+  } catch (error) {
+    console.error('Error creating badge:', error);
+    res.status(500).json({ error: 'An unexpected error occurred.' });
+  }
+});
+
+// add course video
+app.post('/course-video/create', async (req, res) => {
+  try {
+    const { course_id, video_title, video_url } = req.body;
+
+    const { data, error } = await supabase
+      .from('course_video')
+      .insert([
+        {
+          course_id,
+          video_title,
+          video_url
+        }
+      ]);
+
+    if (error) {
+      return res.status(500).json({ error: 'Failed to create course video.' });
+    }
+
+    res.json({ message: 'Course video created successfully.' });
+  } catch (error) {
+    console.error('Error creating course video:', error);
+    res.status(500).json({ error: 'An unexpected error occurred.' });
+  }
+});
+
+// add course
+app.post('/courses/create', async (req, res) => {
+  try {
+    const {
+      title,
+      description,
+      objectives,
+      level,
+      duration,
+      instructorId,
+      prerequisites,
+      certification,
+      language,
+      tag,
+      thumbnailUrl
+    } = req.body;
+
+    const { data, error } = await supabase
+      .from('courses')
+      .insert([
+        {
+          title,
+          description,
+          objectives,
+          level,
+          duration,
+          instructor_id: instructorId,
+          prerequisites,
+          certification,
+          language,
+          tag,
+          thumbnail_url: thumbnailUrl
+        }
+      ]);
+
+    if (error) {
+      return res.status(500).json({ error: 'Failed to create course.' });
+    }
+
+    res.json({ message: 'Course created successfully.' });
+  } catch (error) {
+    console.error('Error creating course:', error);
+    res.status(500).json({ error: 'An unexpected error occurred.' });
+  }
+});
+
+// add instructor
+app.post('/instructor-details/create', async (req, res) => {
+  try {
+    const {
+      name,
+      email,
+      password,
+      organizationAffiliation,
+      teachingExperience,
+      educationalBackground,
+      expertise,
+      phone,
+      address,
+      linkedin,
+      thumbnail_url
+    } = req.body;
+
+    // Hash the password using bcrypt
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const { data, error } = await supabase
+      .from('instructor_details')
+      .insert([
+        {
+          name,
+          email,
+          password: hashedPassword,
+          organization_affiliation: organizationAffiliation,
+          teaching_experience: teachingExperience,
+          educational_background: educationalBackground,
+          expertise,
+          phone,
+          address,
+          linkedin,
+          thumbnail_url
+        }
+      ]);
+
+    if (error) {
+      return res.status(500).json({ error: 'Failed to create instructor details.' });
+    }
+
+    res.json({ message: 'Instructor details created successfully.' });
+  } catch (error) {
+    console.error('Error creating instructor details:', error);
+    res.status(500).json({ error: 'An unexpected error occurred.' });
+  }
+});
+
+// add quiz
+app.post('/quiz/create', async (req, res) => {
+  try {
+    const { course_id, title, description, total_marks } = req.body;
+
+    const { data, error } = await supabase
+      .from('quiz')
+      .insert([
+        {
+          course_id,
+          title,
+          description,
+          total_marks
+        }
+      ]);
+
+    if (error) {
+      return res.status(500).json({ error: 'Failed to create quiz.' });
+    }
+
+    res.json({ message: 'Quiz created successfully.' });
+  } catch (error) {
+    console.error('Error creating quiz:', error);
+    res.status(500).json({ error: 'An unexpected error occurred.' });
+  }
+});
+
+// add question
+app.post('/question/create', async (req, res) => {
+  try {
+    const { quiz_id, text, correct_answer, options, correct_option } = req.body;
+
+    const { data, error } = await supabase
+      .from('question')
+      .insert([
+        {
+          quiz_id,
+          text,
+          correct_answer,
+          options,
+          correct_option
+        }
+      ]);
+
+    if (error) {
+      return res.status(500).json({ error: 'Failed to create question.' });
+    }
+
+    res.json({ message: 'Question created successfully.' });
+  } catch (error) {
+    console.error('Error creating question:', error);
+    res.status(500).json({ error: 'An unexpected error occurred.' });
+  }
+});
 
 app.get('/', async (req, res) => {
     res.json({ message: `Server running successfully on port ${port}` });
