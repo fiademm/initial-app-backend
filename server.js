@@ -1750,23 +1750,22 @@ app.post('/question/create', async (req, res) => {
   }
 });
 
-app.get('/learner-details-total', async (req, res) => {
+// count total learners
+app.get('/learner-details/count', async (req, res) => {
   try {
-    const { data, error } = await supabase
+    const { count, error } = await supabase
       .from('learner_details')
-      .select('*')
-      .count('id', { as: 'total' });
+      .select('count(*)');
 
     if (error) {
-      return res.status(500).json({ error: 'Failed to fetch learner details.' });
+      return res.status(500).json({ error: 'Failed to count learner details.' });
     }
 
-    const totalRows = data[0]?.total || 0;
-    const details = data.slice(0, data.length - 1);
+    const totalCount = count[0].count;
 
-    res.json({ totalRows, details });
+    res.json({ count: totalCount });
   } catch (error) {
-    console.error('Error fetching learner details:', error);
+    console.error('Error counting learner details:', error);
     res.status(500).json({ error: 'An unexpected error occurred.' });
   }
 });
