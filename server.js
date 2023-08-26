@@ -1425,80 +1425,37 @@ app.get('/learner/:id', async (req, res) => {
   }
 });
 
-// // Insert course_review from a particular learner for a particular course
-// app.post('/course_reviews', async (req, res) => {
-//   try {
-//     const { course_id, learner_id, review_text, rating } = req.body;
+// Route to get jobs from the "jobs" table
+app.get('/jobs', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('jobs').select('*');
 
-//     // Check if the learner has already reviewed the course
-//     const { data: existingReviews, error } = await supabase
-//       .from('course_reviews')
-//       .select('*')
-//       .eq('course_id', course_id)
-//       .eq('learner_id', learner_id);
+    if (error) {
+      return res.status(500).json({ error: 'Failed to fetch jobs from the jobs table.' });
+    }
 
-//     if (existingReviews && existingReviews.length > 0) {
-//       return res.status(400).json({ error: 'The learner has already reviewed the course.' });
-//     }
+    res.json(data);
+  } catch (error) {
+    console.error('Error fetching jobs from the jobs table:', error);
+    res.status(500).json({ error: 'An unexpected error occurred.' });
+  }
+});
 
-//     // Insert the course_review
-//     const { data: newReview, error: insertError } = await supabase
-//       .from('course_reviews')
-//       .insert({ course_id, learner_id, review_text, rating })
-//       .single();
+// Route to get events from the "events" table
+app.get('/events', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('events').select('*');
 
-//     if (insertError) {
-//       return res.status(500).json({ error: 'Failed to insert the course review.' });
-//     }
+    if (error) {
+      return res.status(500).json({ error: 'Failed to fetch events from the events table.' });
+    }
 
-//     res.status(201).json(newReview);
-//   } catch (error) {
-//     console.error('Error inserting course review:', error);
-//     res.status(500).json({ error: 'An unexpected error occurred.' });
-//   }
-// });
-
-// // Get reviews for a particular course
-// app.get('/course_reviews/:courseId', async (req, res) => {
-//   try {
-//     const courseId = req.params.courseId;
-
-//     const { data: reviews, error } = await supabase
-//       .from('course_reviews')
-//       .select('*')
-//       .eq('course_id', courseId);
-
-//     if (error) {
-//       return res.status(500).json({ error: 'Failed to fetch course reviews.' });
-//     }
-
-//     res.json(reviews);
-//   } catch (error) {
-//     console.error('Error getting course reviews:', error);
-//     res.status(500).json({ error: 'An unexpected error occurred.' });
-//   }
-// });
-
-// // Get reviews for a particular learner
-// app.get('/course_reviews/learner/:learnerId', async (req, res) => {
-//   try {
-//     const learnerId = req.params.learnerId;
-
-//     const { data: reviews, error } = await supabase
-//       .from('course_reviews')
-//       .select('*')
-//       .eq('learner_id', learnerId);
-
-//     if (error) {
-//       return res.status(500).json({ error: 'Failed to fetch course reviews.' });
-//     }
-
-//     res.json(reviews);
-//   } catch (error) {
-//     console.error('Error getting course reviews:', error);
-//     res.status(500).json({ error: 'An unexpected error occurred.' });
-//   }
-// });
+    res.json(data);
+  } catch (error) {
+    console.error('Error fetching events from the events table:', error);
+    res.status(500).json({ error: 'An unexpected error occurred.' });
+  }
+});
 
 /* ============================================================================ */
 /*                           R O U T E S  F O R  A D M I N                       */
@@ -1800,6 +1757,69 @@ app.get('/sorted-course-enrollment', async (req, res) => {
     res.json(data);
   } catch (error) {
     console.error('Error fetching data from the view:', error);
+    res.status(500).json({ error: 'An unexpected error occurred.' });
+  }
+});
+
+// add new job
+app.post('/jobs', async (req, res) => {
+  try {
+    const { organization, role, type, salary, location, description, link, contact, enddate } = req.body;
+
+    const { data, error } = await supabase
+      .from('jobs')
+      .insert([
+        {
+          organization,
+          role,
+          type,
+          salary,
+          location,
+          description,
+          link,
+          contact,
+          enddate,
+        },
+      ]);
+
+    if (error) {
+      return res.status(500).json({ error: 'Failed to insert data into the jobs table.' });
+    }
+
+    res.status(201).json({ message: 'Data inserted successfully.' });
+  } catch (error) {
+    console.error('Error inserting data into the jobs table:', error);
+    res.status(500).json({ error: 'An unexpected error occurred.' });
+  }
+});
+
+// insert data into the "events" table
+app.post('/events', async (req, res) => {
+  try {
+    const { organization, title, date, time, location, description, link, contact } = req.body;
+
+    const { data, error } = await supabase
+      .from('events')
+      .insert([
+        {
+          organization,
+          title,
+          date,
+          time,
+          location,
+          description,
+          link,
+          contact,
+        },
+      ]);
+
+    if (error) {
+      return res.status(500).json({ error: 'Failed to insert data into the events table.' });
+    }
+
+    res.status(201).json({ message: 'Data inserted successfully.' });
+  } catch (error) {
+    console.error('Error inserting data into the events table:', error);
     res.status(500).json({ error: 'An unexpected error occurred.' });
   }
 });
