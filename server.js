@@ -1750,6 +1750,31 @@ app.post('/question/create', async (req, res) => {
   }
 });
 
+app.get('/total-rows', async (req, res) => {
+  try {
+    const queries = [
+      supabase.from('learner_details').select('*').count(),
+      supabase.from('instructor_details').select('*').count(),
+      supabase.from('courses').select('*').count(),
+      supabase.from('course_enrollment').select('*').count()
+    ];
+
+    const [learnerCount, instructorCount, courseCount, enrollmentCount] = await Promise.all(queries);
+
+    const totalRows = {
+      learner_details: learnerCount.data[0].count,
+      instructor_details: instructorCount.data[0].count,
+      courses: courseCount.data[0].count,
+      course_enrollment: enrollmentCount.data[0].count
+    };
+
+    res.json({ totalRows });
+  } catch (error) {
+    console.error('Error fetching total rows:', error);
+    res.status(500).json({ error: 'An unexpected error occurred.' });
+  }
+});
+
 app.get('/', async (req, res) => {
     res.json({ message: `Server running successfully on port ${port}` });
   });
