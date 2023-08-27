@@ -1850,6 +1850,28 @@ app.get('/course/details/:courseId', async (req, res) => {
   }
 });
 
+// Route to handle feedback submission
+app.post('/feedback', async (req, res) => {
+  const { rating, feedback } = req.body;
+
+  try {
+    // Insert feedback into the 'feedback' table
+    const { data, error } = await supabase.from('feedback').insert([{ rating, feedback }]);
+
+    if (error) {
+      console.error('Error inserting feedback:', error);
+      res.status(500).json({ success: false, error: 'Error submitting feedback' });
+    } else {
+      const feedbackId = data[0].id;
+
+      res.status(201).json({ success: true, feedbackId });
+    }
+  } catch (error) {
+    console.error('Error inserting feedback:', error);
+    res.status(500).json({ success: false, error: 'Error submitting feedback' });
+  }
+});
+
 app.get('/', async (req, res) => {
     res.json({ message: `Server running successfully on port ${port}` });
   });
