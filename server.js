@@ -2203,21 +2203,46 @@ app.post('/learning-paths/reviews', async (req, res) => {
   }
 });
 
-//fetch progress for a particular learner for a particular path and video
-app.get('/learner/:learnerId/learning-path/:learningPathId/video/:videoId', async (req, res) => {
+// //fetch progress for a particular learner for a particular path and video
+// app.get('/learner/:learnerId/learning-path/:learningPathId/video/:videoId', async (req, res) => {
+//   const learnerId = req.params.learnerId;
+//   const learningPathId = req.params.learningPathId;
+//   const videoId = req.params.videoId;
+
+//   try {
+//     // Fetch video progress from the learning_path_video_progress table
+//     const { data, error } = await supabase
+//       .from('learning_path_video_progress')
+//       .select('*')
+//       .eq('learner_id', learnerId)
+//       .eq('learning_path_id', learningPathId)
+//       .eq('video_id', videoId)
+//       .single();
+
+//     if (error) {
+//       throw error;
+//     }
+
+//     res.json(data);
+//   } catch (error) {
+//     console.error('Error fetching video progress:', error.message);
+//     res.status(500).json({ error: 'An error occurred while fetching video progress' });
+//   }
+// });
+
+app.get('/learner/:learnerId/learning-path/:learningPathId/video/:videoId/progress', async (req, res) => {
   const learnerId = req.params.learnerId;
   const learningPathId = req.params.learningPathId;
   const videoId = req.params.videoId;
 
   try {
-    // Fetch video progress from the learning_path_video_progress table
+    // Fetch the progress of a video for the particular learner and course
     const { data, error } = await supabase
       .from('learning_path_video_progress')
       .select('*')
       .eq('learner_id', learnerId)
       .eq('learning_path_id', learningPathId)
-      .eq('video_id', videoId)
-      .single();
+      .eq('video_id', videoId);
 
     if (error) {
       throw error;
