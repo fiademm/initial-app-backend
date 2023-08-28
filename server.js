@@ -2203,32 +2203,6 @@ app.post('/learning-paths/reviews', async (req, res) => {
   }
 });
 
-// //fetch progress for a particular learner for a particular path and video
-// app.get('/learner/:learnerId/learning-path/:learningPathId/video/:videoId', async (req, res) => {
-//   const learnerId = req.params.learnerId;
-//   const learningPathId = req.params.learningPathId;
-//   const videoId = req.params.videoId;
-
-//   try {
-//     // Fetch video progress from the learning_path_video_progress table
-//     const { data, error } = await supabase
-//       .from('learning_path_video_progress')
-//       .select('*')
-//       .eq('learner_id', learnerId)
-//       .eq('learning_path_id', learningPathId)
-//       .eq('video_id', videoId)
-//       .single();
-
-//     if (error) {
-//       throw error;
-//     }
-
-//     res.json(data);
-//   } catch (error) {
-//     console.error('Error fetching video progress:', error.message);
-//     res.status(500).json({ error: 'An error occurred while fetching video progress' });
-//   }
-// });
 
 app.get('/learner/:learnerId/learning-path/:learningPathId/video/:videoId/progress', async (req, res) => {
   const learnerId = req.params.learnerId;
@@ -2288,100 +2262,31 @@ app.post('/learner/:learnerId/learning-path/:learningPathId/video/:videoId/progr
   }
 });
 
-// app.post('/learner/:learnerId/learning-path/:learningPathId/video/:videoId/progress', async (req, res) => {
-//   const learnerId = req.params.learnerId;
-//   const learningPathId = req.params.learningPathId;
-//   const videoId = req.params.videoId;
-//   const { completed, progressPercentage } = req.body;
+// Backend route to get instructor name and email by ID
+app.get('/instructors/:id', async (req, res) => {
+  const instructorId = req.params.id;
 
-//   try {
-//     // Insert the progress of a video for the particular learner and course
-//     const { data, error } = await supabase
-//       .from('learning_path_video_progress')
-//       .insert([
-//         {
-//           learner_id: learnerId,
-//           learning_path_id: learningPathId,
-//           video_id: videoId,
-//           completed,
-//           progress_percentage: progressPercentage,
-//         },
-//       ]);
+  try {
+    // Fetch instructor details from the database
+    const { data, error } = await supabase
+      .from('instructor_details')
+      .select('name, email')
+      .eq('id', instructorId)
+      .single();
 
-//     if (error) {
-//       throw error;
-//     }
+    if (error) {
+      throw error;
+    }
 
-//     res.status(201).json({ message: 'Video progress inserted successfully' });
-//   } catch (error) {
-//     console.error('Error inserting video progress:', error.message);
-//     res.status(500).json({ error: 'An error occurred while inserting video progress' });
-//   }
-// });
-
-// app.post('/learner/:learnerId/learning-path/:learningPathId/video/:videoId/progress', async (req, res) => {
-//   const learnerId = req.params.learnerId;
-//   const learningPathId = req.params.learningPathId;
-//   const videoId = req.params.videoId;
-
-//   try {
-//     const { completed, progressPercentage } = req.body;
-
-//     // Upsert progress into the learning_path_video_progress table
-//     const { data, error } = await supabase
-//       .from('learning_path_video_progress')
-//       .upsert([
-//         {
-//           learning_path_id: learningPathId,
-//           video_id: videoId,
-//           learner_id: learnerId,
-//           completed: completed,
-//           progress_percentage: progressPercentage,
-//         },
-//       ], { onConflict: ['learning_path_id', 'video_id', 'learner_id'] });
-
-//     if (error) {
-//       throw error;
-//     }
-
-//     res.json(data);
-//   } catch (error) {
-//     console.error('Error inserting/updating progress:', error.message);
-//     res.status(500).json({ error: 'An error occurred while inserting/updating progress' });
-//   }
-// });
-
-// app.post('/learner/:learnerId/learning-path/:learningPathId/video/:videoId/progress', async (req, res) => {
-//   const learnerId = req.params.learnerId;
-//   const learningPathId = req.params.learningPathId;
-//   const videoId = req.params.videoId;
-
-//   try {
-//     const { completed, progressPercentage } = req.body;
-
-//     // Insert progress into the learning_path_video_progress table
-//     const { data, error } = await supabase
-//       .from('learning_path_video_progress')
-//       .insert([
-//         {
-//           learning_path_id: learningPathId,
-//           video_id: videoId,
-//           learner_id: learnerId,
-//           completed: completed,
-//           progress_percentage: progressPercentage,
-//         },
-//       ]);
-
-//     if (error) {
-//       throw error;
-//     }
-
-//     res.json(data);
-//   } catch (error) {
-//     console.error('Error inserting progress:', error.message);
-//     res.status(500).json({ error: 'An error occurred while inserting progress' });
-//   }
-// });
+    if (data) {
+      res.json(data);
+    } else {
+      res.status(404).json({ message: 'Instructor not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: 'Error retrieving instructor details' });
+  }
+});
 
 /* ============================================================================ */
 
