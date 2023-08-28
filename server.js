@@ -2227,6 +2227,38 @@ app.get('/learner/:learnerId/learning-path/:learningPathId/video/:videoId', asyn
   }
 });
 
+app.post('/learner/:learnerId/learning-path/:learningPathId/video/:videoId/progress', async (req, res) => {
+  const learnerId = req.params.learnerId;
+  const learningPathId = req.params.learningPathId;
+  const videoId = req.params.videoId;
+
+  try {
+    const { completed, progressPercentage } = req.body;
+
+    // Insert progress into the learning_path_video_progress table
+    const { data, error } = await supabase
+      .from('learning_path_video_progress')
+      .insert([
+        {
+          learning_path_id: learningPathId,
+          video_id: videoId,
+          learner_id: learnerId,
+          completed: completed,
+          progress_percentage: progressPercentage,
+        },
+      ]);
+
+    if (error) {
+      throw error;
+    }
+
+    res.json(data);
+  } catch (error) {
+    console.error('Error inserting progress:', error.message);
+    res.status(500).json({ error: 'An error occurred while inserting progress' });
+  }
+});
+
 /* ============================================================================ */
 
 app.get('/', async (req, res) => {
