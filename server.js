@@ -1889,6 +1889,31 @@ app.get('/allinstructors', async (req, res) => {
   }
 });
 
+// Route to fetch the sum of all scores for a particular learner
+app.get('/learner/scores/:learnerId', async (req, res) => {
+  const learnerId = req.params.learnerId;
+
+  try {
+    // Fetch the sum of all scores for the learner with the given ID
+    const { data, error } = await supabase
+      .from('quiz_attempt')
+      .select('sum(score)')
+      .eq('learner_id', learnerId)
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    const sumOfScores = data.sum || 0; // Handle the case when no scores are present
+
+    res.json({ sumOfScores });
+  } catch (error) {
+    console.error('Error fetching sum of scores:', error);
+    res.status(500).json({ error: 'Error fetching sum of scores' });
+  }
+});
+
 app.get('/', async (req, res) => {
     res.json({ message: `Server running successfully on port ${port}` });
   });
