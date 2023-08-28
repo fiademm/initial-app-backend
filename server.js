@@ -1940,6 +1940,62 @@ app.get('/learning-paths/:id', async (req, res) => {
   }
 });
 
+// Route to check enrollment status of a learner in a course
+app.get('/learning-paths/enrollment/:learnerId/:learningPathId', async (req, res) => {
+  try {
+    const { learnerId, learningPathId } = req.params;
+
+    const { data, error } = await supabase
+      .from('learning_path_enrollment')
+      .select('*')
+      .eq('learner_id', learnerId)
+      .eq('learning_path_id', learningPathId);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    const enrolled = data.length > 0;
+
+    res.status(200).json({ enrolled });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Route to enroll a learner in a course
+app.post('/learning-paths/enrollment', async (req, res) => {
+  try {
+    const { learnerId, learningPathId } = req.body;
+
+    const { data: enrollmentData, error: enrollmentError } = await supabase
+      .from('learning_path_enrollment')
+      .insert([{ learner_id: learnerId, learning_path_id: learningPathId, enrolled_at: new Date() }]);
+
+    if (enrollmentError) {
+      throw new Error(enrollmentError.message);
+    }
+
+    const { data: learningPathData, error: learningPathError } = await supabase
+      .from('learning_path')
+      .select('*')
+      .eq('id', learningPathId)
+      .single();
+
+    if (learningPathError) {
+      throw new Error(learningPathError.message);
+    }
+
+    if (!learningPathData) {
+      return res.status(404).json({ message: 'Learning path not found' });
+    }
+
+    res.status(201).json({ message: 'Learner enrolled successfully', learningPath: learningPathData });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 /* ============================================================================ */
 
 app.get('/', async (req, res) => {
