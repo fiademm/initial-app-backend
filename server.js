@@ -2288,6 +2288,30 @@ app.get('/instructors/:id', async (req, res) => {
   }
 });
 
+// Backend route to get all ratings for a course by ID
+app.get('/courses/:id/ratings', async (req, res) => {
+  const courseId = req.params.id;
+
+  try {
+    // Fetch all ratings for the course from the database
+    const { data, error } = await supabase
+      .from('course_reviews')
+      .select('rating')
+      .eq('course_id', courseId);
+
+    if (error) {
+      throw error;
+    }
+
+    // Calculate the sum of ratings
+    const sumOfRatings = data.reduce((total, review) => total + review.rating, 0);
+
+    res.json({ sumOfRatings });
+  } catch (error) {
+    res.status(500).json({ message: 'Error retrieving course ratings' });
+  }
+});
+
 /* ============================================================================ */
 
 app.get('/', async (req, res) => {
