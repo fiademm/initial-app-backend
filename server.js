@@ -2020,29 +2020,15 @@ app.get('/learning-paths/progress/calculate/:learnerId/:learningPathId', async (
   }
 });
 
-// Route to fetch all path videos
-app.get('/learning-paths/videos', async (req, res) => {
+// Route to fetch a particular video for a specific learning path
+app.get('/learning-paths/videos/:learningPathId/:videoId', async (req, res) => {
   try {
-    const { data, error } = await supabase.from('learning_path_video').select('*');
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    res.status(200).json({ videos: data });
-  } catch (error) {
-    res.status(500).json({ error: error.message + 'ewewe'});
-  }
-});
-
-// Route to fetch a path video by ID
-app.get('/learning-paths/videos/:videoId', async (req, res) => {
-  try {
-    const { videoId } = req.params;
+    const { learningPathId, videoId } = req.params;
 
     const { data, error } = await supabase
       .from('learning_path_video')
       .select('*')
+      .eq('learning_path_id', learningPathId)
       .eq('id', videoId)
       .single();
 
@@ -2051,6 +2037,26 @@ app.get('/learning-paths/videos/:videoId', async (req, res) => {
     }
 
     res.status(200).json({ video: data });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Route to fetch all videos for a particular learning path
+app.get('/learning-paths/videos/:learningPathId', async (req, res) => {
+  try {
+    const { learningPathId } = req.params;
+
+    const { data, error } = await supabase
+      .from('learning_path_video')
+      .select('*')
+      .eq('learning_path_id', learningPathId);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    res.status(200).json({ videos: data });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
