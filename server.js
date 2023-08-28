@@ -1872,6 +1872,23 @@ app.post('/feedback', async (req, res) => {
   }
 });
 
+// Route to fetch instructor details
+app.get('/allinstructors', async (req, res) => {
+  try {
+    // Fetch instructor details from the 'instructor_details' table
+    const { data, error } = await supabase.from('instructor_details').select('*');
+
+    if (error) {
+      throw error;
+    }
+
+    res.json(data);
+  } catch (error) {
+    console.error('Error fetching instructor details:', error);
+    res.status(500).json({ error: 'Error fetching instructor details' });
+  }
+});
+
 app.get('/', async (req, res) => {
     res.json({ message: `Server running successfully on port ${port}` });
   });
