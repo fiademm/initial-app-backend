@@ -2259,33 +2259,64 @@ app.post('/learner/:learnerId/learning-path/:learningPathId/video/:videoId/progr
   const learnerId = req.params.learnerId;
   const learningPathId = req.params.learningPathId;
   const videoId = req.params.videoId;
+  const { completed, progressPercentage } = req.body;
 
   try {
-    const { completed, progressPercentage } = req.body;
-
-    // Upsert progress into the learning_path_video_progress table
+    // Insert the progress of a video for the particular learner and course
     const { data, error } = await supabase
       .from('learning_path_video_progress')
-      .upsert([
+      .insert([
         {
+          learner_id: learnerId,
           learning_path_id: learningPathId,
           video_id: videoId,
-          learner_id: learnerId,
-          completed: completed,
+          completed,
           progress_percentage: progressPercentage,
         },
-      ], { onConflict: ['learning_path_id', 'video_id', 'learner_id'] });
+      ]);
 
     if (error) {
       throw error;
     }
 
-    res.json(data);
+    res.status(201).json({ message: 'Video progress inserted successfully' });
   } catch (error) {
-    console.error('Error inserting/updating progress:', error.message);
-    res.status(500).json({ error: 'An error occurred while inserting/updating progress' });
+    console.error('Error inserting video progress:', error.message);
+    res.status(500).json({ error: 'An error occurred while inserting video progress' });
   }
 });
+
+// app.post('/learner/:learnerId/learning-path/:learningPathId/video/:videoId/progress', async (req, res) => {
+//   const learnerId = req.params.learnerId;
+//   const learningPathId = req.params.learningPathId;
+//   const videoId = req.params.videoId;
+
+//   try {
+//     const { completed, progressPercentage } = req.body;
+
+//     // Upsert progress into the learning_path_video_progress table
+//     const { data, error } = await supabase
+//       .from('learning_path_video_progress')
+//       .upsert([
+//         {
+//           learning_path_id: learningPathId,
+//           video_id: videoId,
+//           learner_id: learnerId,
+//           completed: completed,
+//           progress_percentage: progressPercentage,
+//         },
+//       ], { onConflict: ['learning_path_id', 'video_id', 'learner_id'] });
+
+//     if (error) {
+//       throw error;
+//     }
+
+//     res.json(data);
+//   } catch (error) {
+//     console.error('Error inserting/updating progress:', error.message);
+//     res.status(500).json({ error: 'An error occurred while inserting/updating progress' });
+//   }
+// });
 
 // app.post('/learner/:learnerId/learning-path/:learningPathId/video/:videoId/progress', async (req, res) => {
 //   const learnerId = req.params.learnerId;
