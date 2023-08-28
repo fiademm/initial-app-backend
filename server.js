@@ -2019,6 +2019,43 @@ app.get('/learning-paths/progress/calculate/:learnerId/:learningPathId', async (
     res.status(500).json({ error: error.message });
   }
 });
+
+// Route to fetch all path videos
+app.get('/learning-paths/videos', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('learning_path_video').select('*');
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    res.status(200).json({ videos: data });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Route to fetch a path video by ID
+app.get('/learning-paths/videos/:videoId', async (req, res) => {
+  try {
+    const { videoId } = req.params;
+
+    const { data, error } = await supabase
+      .from('learning_path_video')
+      .select('*')
+      .eq('id', videoId)
+      .single();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    res.status(200).json({ video: data });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 /* ============================================================================ */
 
 app.get('/', async (req, res) => {
