@@ -2031,7 +2031,7 @@ app.get('/learning-paths/videos', async (req, res) => {
 
     res.status(200).json({ videos: data });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error.message + 'ewewe'});
   }
 });
 
