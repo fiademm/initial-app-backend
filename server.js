@@ -2147,6 +2147,34 @@ app.get('/learning-paths/reviews/:learningPathId', async (req, res) => {
   }
 });
 
+// Route to add a review for a particular learning path by a specific learner
+app.post('/learning-paths/reviews', async (req, res) => {
+  try {
+    const { learningPathId, learnerId, learnerName, rating, reviewText } = req.body;
+
+    const { data, error } = await supabase
+      .from('learning_path_review')
+      .insert([
+        {
+          learning_path_id: learningPathId,
+          learner_id: learnerId,
+          learner_name: learnerName,
+          rating,
+          review_text: reviewText,
+          created_at: new Date().toISOString(),
+        },
+      ]);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    res.status(201).json({ review: data[0] });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 /* ============================================================================ */
 
 app.get('/', async (req, res) => {
