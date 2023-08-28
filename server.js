@@ -2126,6 +2126,27 @@ app.get('/learning-paths/reviews/check', async (req, res) => {
   }
 });
 
+// Route to fetch reviews for a particular learning path in recent date order
+app.get('/learning-paths/reviews/:learningPathId', async (req, res) => {
+  try {
+    const { learningPathId } = req.params;
+
+    const { data, error } = await supabase
+      .from('learning_path_review')
+      .select('*')
+      .eq('learning_path_id', learningPathId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    res.status(200).json({ reviews: data });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 /* ============================================================================ */
 
 app.get('/', async (req, res) => {
