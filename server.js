@@ -2082,6 +2082,26 @@ app.get('/learning-paths/videos/count/:learningPathId', async (req, res) => {
   }
 });
 
+// Route to fetch all quizzes for a particular learning path
+app.get('/learning-paths/quizzes/:learningPathId', async (req, res) => {
+  try {
+    const { learningPathId } = req.params;
+
+    const { data, error } = await supabase
+      .from('learning_path_quiz')
+      .select('*')
+      .eq('learning_path_id', learningPathId);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    res.status(200).json({ quizzes: data });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 /* ============================================================================ */
 
 app.get('/', async (req, res) => {
