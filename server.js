@@ -654,41 +654,7 @@ app.post('/admin/courses', async (req, res) => {
     }
   });  
 
-// // insert course video progress
-// app.post('/course-progress', async (req, res) => {
-//     const { learner_id, course_id, video_id, progress } = req.body;
-
-//     try {
-//         const query = `INSERT INTO video_progress (learner_id, course_id, video_id, progress) VALUES ($1, $2, $3, $4) RETURNING id`;
-//         const result = await pool.query(query, values);
-//         const insertedId = result.rows[0].id;
-
-//         res.json({ id: insertedId });
-//     } catch (error) {
-//         console.error('Error updating course progress: ', error);
-//         res.status(500).json({message: 'Server error'});
-//     }
-// });
-
-// // update course video progress
-// app.put('/course-progress/:id', async (req, res) => {
-//     const { id } = req.params;
-//     const { progress } = req.body;
-
-//     try {
-//         const query = 'UPDATE video_progress SET progress = $1 WHERE id = $2';
-//         const values = [progress, id];
-
-//         await pool.query(query, values);
-
-//         res.json({ message: 'Course progress updated succesfully'});
-//     } catch (error) {
-//         console.error('Error updating course progress: ', error );
-//         res.status(500).json({ message: 'Server error' });
-//     }
-// })
-
-/// Create or update course progress
+// Create or update course progress
 app.post('/course-progress', async (req, res) => {
     const { learnerId, courseId, videoId, progress } = req.body;
   
@@ -1457,9 +1423,9 @@ app.get('/events', async (req, res) => {
   }
 });
 
-/* ============================================================================ */
-/*                           R O U T E S  F O R  A D M I N                       */
-/* ============================================================================ */
+/* ============================================================================ 
+                             R O U T E S  F O R  A D M I N                       
+   ============================================================================ */
 // add new administrator
 app.post('/admin/create', async (req, res) => {
   try {
@@ -1912,6 +1878,69 @@ app.get('/learner/scores/:learnerId', async (req, res) => {
     res.status(500).json({ error: 'Error fetching scores' });
   }
 });
+
+/* ============================================================================ 
+                    R O U T E S  F O R  L E A R N I N G  P A T H S                       
+   ============================================================================ */
+// Route to insert a new learning path into the table
+app.post('/learning-paths', async (req, res) => {
+  try {
+    const { thumbnail_url, title, description, objectives, outline, duration, organization, contact, languages, tags } = req.body;
+
+    const { data, error } = await supabase
+      .from('learning_path')
+      .insert([{ thumbnail_url, title, description, objectives, outline, duration, organization, contact, languages, tags }]);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    res.status(201).json({ message: 'Learning path created successfully', data });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Route to fetch all learning paths from the table
+app.get('/learning-paths', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('learning_path').select('*');
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    res.status(200).json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Route to fetch a specific learning path based on ID
+app.get('/learning-paths/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const { data, error } = await supabase
+      .from('learning_path')
+      .select('*')
+      .eq('id', id);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    if (data.length === 0) {
+      return res.status(404).json({ message: 'Learning path not found' });
+    }
+
+    res.status(200).json(data[0]);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/* ============================================================================ */
 
 app.get('/', async (req, res) => {
     res.json({ message: `Server running successfully on port ${port}` });
