@@ -2102,6 +2102,30 @@ app.get('/learning-paths/quizzes/:learningPathId', async (req, res) => {
   }
 });
 
+// Route to check if a learner has already reviewed and rated a particular learning path
+app.get('/learning-paths/reviews/check', async (req, res) => {
+  try {
+    const { learningPathId, learnerId } = req.query;
+
+    const { data, error } = await supabase
+      .from('learning_path_review')
+      .select('*')
+      .eq('learning_path_id', learningPathId)
+      .eq('learner_id', learnerId)
+      .limit(1);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    const hasReviewed = data.length > 0;
+
+    res.status(200).json({ hasReviewed });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 /* ============================================================================ */
 
 app.get('/', async (req, res) => {
