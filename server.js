@@ -2088,22 +2088,25 @@ app.get('/learning-paths/videos/:learningPathId', async (req, res) => {
 });
 
 // Route to fetch the total number of videos for a particular learning path
-app.get('/learning-paths/videos/count/:learningPathId', async (req, res) => {
-  try {
-    const { learningPathId } = req.params;
+app.get('/learning-path/:learningPathId/videos/count', async (req, res) => {
+  const learningPathId = req.params.learningPathId;
 
-    const { count, error } = await supabase
+  try {
+    // Fetch the total count of videos for the learning path
+    const { data, error } = await supabase
       .from('learning_path_video')
-      .select('*', { count: 'exact' })
+      .select('id', { count: 'exact', head: true })
       .eq('learning_path_id', learningPathId);
 
     if (error) {
-      throw new Error(error.message);
+      throw error;
     }
 
-    res.status(200).json({ videoCount: count });
+    const totalCount = data[0].count;
+    res.json({ count: totalCount });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Error retrieving video count:', error.message);
+    res.status(500).json({ error: 'An error occurred while retrieving video count' });
   }
 });
 
