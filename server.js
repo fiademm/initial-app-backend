@@ -1996,6 +1996,31 @@ app.post('/learning-paths/enrollment', async (req, res) => {
   }
 });
 
+// Route to enroll a learner in a learning path
+app.post('/learning-paths/enroll', async (req, res) => {
+  try {
+    const { learningPathId, learnerId } = req.body;
+
+    const { data, error } = await supabase
+      .from('learning_path_enrollment')
+      .insert([
+        {
+          learning_path_id: learningPathId,
+          learner_id: learnerId,
+          enrolled_at: new Date().toISOString(),
+        },
+      ]);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    res.status(201).json({ enrollment: data[0] });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Route to calculate the overall progress of a learning path for a learner
 app.get('/learning-paths/progress/calculate/:learnerId/:learningPathId', async (req, res) => {
   try {
