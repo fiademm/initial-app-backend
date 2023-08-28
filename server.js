@@ -1996,6 +1996,29 @@ app.post('/learning-paths/enrollment', async (req, res) => {
   }
 });
 
+// Route to calculate the overall progress of a learning path for a learner
+app.get('/learning-paths/progress/calculate/:learnerId/:learningPathId', async (req, res) => {
+  try {
+    const { learnerId, learningPathId } = req.params;
+
+    const { data, error } = await supabase
+      .from('learning_path_video_progress')
+      .select('progress_percentage')
+      .eq('learner_id', learnerId)
+      .eq('learning_path_id', learningPathId);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    const progressPercentages = data.map((item) => item.progress_percentage);
+    const overallProgress = progressPercentages.reduce((acc, curr) => acc + curr, 0) / progressPercentages.length;
+
+    res.status(200).json({ overallProgress });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 /* ============================================================================ */
 
 app.get('/', async (req, res) => {
